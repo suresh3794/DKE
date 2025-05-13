@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const session = require('express-session');
 const { connectToDatabase, isConnected } = require('./utils/database');
+const { cloudinary } = require('./config/cloudinary');
 
 // Set strictQuery to suppress deprecation warning
 mongoose.set('strictQuery', true);
@@ -86,6 +87,25 @@ app.set('view engine', 'ejs');
 console.log('Current directory:', __dirname);
 console.log('Views directory:', path.join(__dirname, 'views'));
 console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
+
+// Log Cloudinary configuration status
+console.log("Cloudinary configuration:", {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? "✓ Set" : "✗ Missing",
+  api_key: process.env.CLOUDINARY_API_KEY ? "✓ Set" : "✗ Missing",
+  api_secret: process.env.CLOUDINARY_API_SECRET ? "✓ Set" : "✗ Missing"
+});
+
+// Verify Cloudinary configuration
+try {
+  const cloudConfig = cloudinary.config();
+  if (!cloudConfig.cloud_name || !cloudConfig.api_key || !cloudConfig.api_secret) {
+    console.warn("⚠️ Incomplete Cloudinary configuration. Image uploads may not work.");
+  } else {
+    console.log("✅ Cloudinary configured successfully");
+  }
+} catch (error) {
+  console.error("❌ Error verifying Cloudinary configuration:", error);
+}
 
 function useDefaultSettings(res) {
   res.locals.settings = {

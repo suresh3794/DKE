@@ -1,14 +1,7 @@
 {
-  "main": "app.js",
-  "engines": {
-    "node": ">=14.x"
-  },
-  "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "vercel-build": "echo 'Build step completed'"
-  },
   "dependencies": {
+    "cloudinary": "^1.41.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.10",
     "express": "^5.1.0",

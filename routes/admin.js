@@ -1,52 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Setting = require('../models/Setting');
+const Product = require('../models/Product');
+const Gallery = require('../models/Gallery');
+const Testimonial = require('../models/Testimonial');
+const User = require('../models/User');
+const Contact = require('../models/Contact');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../public/uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Import Cloudinary configuration
+const { 
+  galleryUpload, 
+  productUpload, 
+  testimonialUpload, 
+  heroSlideUpload,
+  deleteImage 
+} = require('../config/cloudinary');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'public/uploads/');
-  },
-  filename: function(req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: function(req, file, cb) {
-    const filetypes = /jpeg|jpg|png|gif|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error('Only image files are allowed!'));
-  }
-});
-
-// Models
-const User = mongoose.model('User');
-const Gallery = mongoose.model('Gallery');
-const Product = mongoose.model('Product');
-const Testimonial = mongoose.model('Testimonial');
-const Contact = mongoose.model('Contact');
-
-// Middleware to check if user is logged in
+// Authentication middleware
 const isAuthenticated = (req, res, next) => {
-  if (req.session.userId) {
+  if (req.session && req.session.isAuthenticated) {
     return next();
   }
   res.redirect('/admin/login');
@@ -97,8 +72,18 @@ router.post('/login', async (req, res) => {
       return res.render('admin/login', { error: 'Invalid username or password' });
     }
     
+    // Set session variables
     req.session.userId = user._id;
-    res.redirect('/admin');
+    req.session.isAuthenticated = true;
+    
+    // Save session before redirecting
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.render('admin/login', { error: 'Login failed' });
+      }
+      res.redirect('/admin');
+    });
   } catch (err) {
     console.error(err);
     res.render('admin/login', { error: 'Login failed' });
@@ -128,7 +113,7 @@ router.get('/products/add', isAuthenticated, (req, res) => {
 });
 
 // Add product process
-router.post('/products/add', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/products/add', isAuthenticated, productUpload.single('image'), async (req, res) => {
   try {
     const { name, description, category, featured } = req.body;
     
@@ -143,7 +128,7 @@ router.post('/products/add', isAuthenticated, upload.single('image'), async (req
       name,
       description,
       category,
-      imageUrl: `/uploads/${req.file.filename}`,
+      imageUrl: req.file.path, // Cloudinary URL
       featured: featured === 'on' ? true : false
     });
     
@@ -176,7 +161,7 @@ router.get('/products/edit/:id', isAuthenticated, async (req, res) => {
 });
 
 // Edit product process
-router.post('/products/edit/:id', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/products/edit/:id', isAuthenticated, productUpload.single('image'), async (req, res) => {
   try {
     const { name, description, category, featured } = req.body;
     
@@ -192,15 +177,12 @@ router.post('/products/edit/:id', isAuthenticated, upload.single('image'), async
     product.featured = featured === 'on' ? true : false;
     
     if (req.file) {
-      // Delete old image if it exists
+      // Delete old image from Cloudinary if it exists
       if (product.imageUrl) {
-        const oldImagePath = path.join(__dirname, '../public', product.imageUrl);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
+        await deleteImage(product.imageUrl);
       }
       
-      product.imageUrl = `/uploads/${req.file.filename}`;
+      product.imageUrl = req.file.path; // Cloudinary URL
     }
     
     await product.save();
@@ -221,12 +203,9 @@ router.post('/products/delete/:id', isAuthenticated, async (req, res) => {
       return res.redirect('/admin/products?error=Product not found');
     }
     
-    // Delete image file
+    // Delete image from Cloudinary
     if (product.imageUrl) {
-      const imagePath = path.join(__dirname, '../public', product.imageUrl);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+      await deleteImage(product.imageUrl);
     }
     
     await Product.findByIdAndDelete(req.params.id);
@@ -262,7 +241,7 @@ router.get('/gallery/add', isAuthenticated, (req, res) => {
 });
 
 // Add gallery item process
-router.post('/gallery/add', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/gallery/add', isAuthenticated, galleryUpload.single('image'), async (req, res) => {
   try {
     const { title, description, category, productCategory } = req.body;
     
@@ -279,7 +258,7 @@ router.post('/gallery/add', isAuthenticated, upload.single('image'), async (req,
       description,
       category,
       productCategory: category === 'products' ? productCategory : '',
-      imageUrl: `/uploads/${req.file.filename}`
+      imageUrl: req.file.path // Cloudinary URL
     });
     
     await newGalleryItem.save();
@@ -315,7 +294,7 @@ router.get('/gallery/edit/:id', isAuthenticated, async (req, res) => {
 });
 
 // Edit gallery item process
-router.post('/gallery/edit/:id', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/gallery/edit/:id', isAuthenticated, galleryUpload.single('image'), async (req, res) => {
   try {
     const { title, description, category, productCategory } = req.body;
     
@@ -331,15 +310,12 @@ router.post('/gallery/edit/:id', isAuthenticated, upload.single('image'), async 
     item.productCategory = category === 'products' ? productCategory : '';
     
     if (req.file) {
-      // Delete old image if it exists
+      // Delete old image from Cloudinary if it exists
       if (item.imageUrl) {
-        const oldImagePath = path.join(__dirname, '../public', item.imageUrl);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
+        await deleteImage(item.imageUrl);
       }
       
-      item.imageUrl = `/uploads/${req.file.filename}`;
+      item.imageUrl = req.file.path; // Cloudinary URL
     }
     
     await item.save();
@@ -360,12 +336,9 @@ router.post('/gallery/delete/:id', isAuthenticated, async (req, res) => {
       return res.redirect('/admin/gallery?error=Gallery item not found');
     }
     
-    // Delete image file
+    // Delete image from Cloudinary
     if (item.imageUrl) {
-      const imagePath = path.join(__dirname, '../public', item.imageUrl);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+      await deleteImage(item.imageUrl);
     }
     
     await Gallery.findByIdAndDelete(req.params.id);
@@ -401,7 +374,7 @@ router.get('/testimonials/add', isAuthenticated, (req, res) => {
 });
 
 // Add testimonial process
-router.post('/testimonials/add', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/testimonials/add', isAuthenticated, testimonialUpload.single('image'), async (req, res) => {
   try {
     const { name, position, company, content, rating, featured } = req.body;
     
@@ -412,7 +385,7 @@ router.post('/testimonials/add', isAuthenticated, upload.single('image'), async 
       content,
       rating: parseInt(rating) || 5,
       featured: featured === 'on' ? true : false,
-      imageUrl: req.file ? `/uploads/${req.file.filename}` : ''
+      imageUrl: req.file ? req.file.path : '' // Cloudinary URL or empty
     });
     
     await newTestimonial.save();
@@ -448,7 +421,7 @@ router.get('/testimonials/edit/:id', isAuthenticated, async (req, res) => {
 });
 
 // Edit testimonial process
-router.post('/testimonials/edit/:id', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/testimonials/edit/:id', isAuthenticated, testimonialUpload.single('image'), async (req, res) => {
   try {
     const { name, position, company, content, rating, featured } = req.body;
     
@@ -466,15 +439,12 @@ router.post('/testimonials/edit/:id', isAuthenticated, upload.single('image'), a
     testimonial.featured = featured === 'on' ? true : false;
     
     if (req.file) {
-      // Delete old image if it exists
+      // Delete old image from Cloudinary if it exists
       if (testimonial.imageUrl) {
-        const oldImagePath = path.join(__dirname, '../public', testimonial.imageUrl);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
+        await deleteImage(testimonial.imageUrl);
       }
       
-      testimonial.imageUrl = `/uploads/${req.file.filename}`;
+      testimonial.imageUrl = req.file.path; // Cloudinary URL
     }
     
     await testimonial.save();
@@ -696,7 +666,7 @@ router.get('/settings/slide/:index', isAuthenticated, async (req, res) => {
 });
 
 // Update slide
-router.post('/settings/slide/:index', isAuthenticated, upload.single('image'), async (req, res) => {
+router.post('/settings/slide/:index', isAuthenticated, heroSlideUpload.single('image'), async (req, res) => {
   try {
     console.log('Slide update request received for index:', req.params.index);
     console.log('File uploaded:', req.file);
@@ -727,19 +697,16 @@ router.post('/settings/slide/:index', isAuthenticated, upload.single('image'), a
       settings.heroSlides = Array(6).fill('');
     }
     
-    // Delete old image if it exists
+    // Delete old image from Cloudinary if it exists
     if (settings.heroSlides[slideIndex]) {
-      const oldImagePath = path.join(__dirname, '../public', settings.heroSlides[slideIndex]);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath);
-      }
+      await deleteImage(settings.heroSlides[slideIndex]);
     }
     
     // Add more logging
     console.log('Settings before update:', settings);
     
-    // Update slide image
-    settings.heroSlides[slideIndex] = `/uploads/${req.file.filename}`;
+    // Update slide image with Cloudinary URL
+    settings.heroSlides[slideIndex] = req.file.path;
     settings.updatedAt = Date.now();
     
     console.log('Settings after update:', settings);
