@@ -120,21 +120,6 @@ function useDefaultSettings(res) {
 // Function to set up routes and models after DB connection
 function setupRoutes() {
   try {
-    // Only try to access models if database is connected
-    if (mongoose.connection.readyState === 1) {
-      console.log('Loading models from successful DB connection');
-      // Now it's safe to access models
-      const User = mongoose.model('User');
-      const Gallery = mongoose.model('Gallery');
-      const Product = mongoose.model('Product');
-      const Testimonial = mongoose.model('Testimonial');
-      const Contact = mongoose.model('Contact');
-      const Setting = mongoose.model('Setting');
-    } else {
-      console.log('Database not connected, using mock models');
-      // Create mock models or handle the case when models aren't available
-    }
-    
     // Make settings available globally - with better error handling
     app.use(async (req, res, next) => {
       try {
@@ -175,6 +160,23 @@ function setupRoutes() {
     // Routes
     app.use('/', publicRoutes);
     app.use('/admin', adminRoutes);
+    
+    // Add a 404 handler for any unmatched routes
+    app.use((req, res) => {
+      res.status(404).render('error', { 
+        message: 'Page not found', 
+        error: { status: 404, stack: '' } 
+      });
+    });
+    
+    // Add error handler
+    app.use((err, req, res, next) => {
+      console.error(err.stack);
+      res.status(err.status || 500).render('error', {
+        message: err.message,
+        error: process.env.NODE_ENV === 'development' ? err : {}
+      });
+    });
   } catch (error) {
     console.error('Error in setupRoutes:', error);
     // Continue with basic functionality
