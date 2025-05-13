@@ -8,13 +8,19 @@ const Setting = require('./models/Setting');
 // Initialize app
 const app = express();
 
-// Connect to MongoDB (using MongoDB Atlas)
-mongoose.connect('mongodb+srv://3994suresh:7KbAHTdZmJyhEZ3J@cluster0.5qooyr4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('MongoDB connected');
-}).catch(err => {
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  // Auto-index is fine for small projects but not recommended for production
+  autoIndex: true
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB connection error:', err));
+
+// Handle MongoDB connection errors after initial connection
+mongoose.connection.on('error', err => {
   console.error('MongoDB connection error:', err);
 });
 
