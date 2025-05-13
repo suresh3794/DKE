@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 let cachedConnection = null;
 
 async function connectToDatabase() {
-  if (cachedConnection) {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
     console.log('Using cached database connection');
     return cachedConnection;
   }
@@ -17,6 +17,12 @@ async function connectToDatabase() {
 
   try {
     console.log('Attempting to connect to MongoDB...');
+    
+    // Disconnect if there's a stale connection
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    
     // Add serverless-friendly options
     const connection = await mongoose.connect(uri, {
       useNewUrlParser: true,
@@ -30,6 +36,17 @@ async function connectToDatabase() {
       // Add these for serverless environments
       bufferCommands: false, // Disable buffering for serverless
       autoCreate: false      // Don't auto-create collections
+    });
+
+    // Add connection error handler
+    mongoose.connection.on('error', (err) => {
+      console.error('MongoDB connection error after initial connection:', err);
+    });
+
+    // Add disconnection handler
+    mongoose.connection.on('disconnected', () => {
+      console.log('MongoDB disconnected');
+      cachedConnection = null;
     });
 
     console.log('MongoDB connection established successfully');

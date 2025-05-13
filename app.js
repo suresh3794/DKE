@@ -77,6 +77,16 @@ console.log('Current directory:', __dirname);
 console.log('Views directory:', path.join(__dirname, 'views'));
 console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
 
+function useDefaultSettings(res) {
+  res.locals.settings = {
+    siteName: 'Dignity Kitchen',
+    siteDescription: 'Kitchen Equipment Supplier',
+    contactEmail: 'info@example.com',
+    contactPhone: '+1234567890',
+    address: 'Default Address'
+  };
+}
+
 // Function to set up routes and models after DB connection
 function setupRoutes() {
   try {
