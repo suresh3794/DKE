@@ -11,7 +11,8 @@ async function connectToDatabase() {
   // Check if MONGODB_URI is defined
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    throw new Error('MONGODB_URI environment variable is not defined');
+    console.error('MONGODB_URI environment variable is not defined');
+    return null;
   }
 
   try {
@@ -36,7 +37,7 @@ async function connectToDatabase() {
     return connection;
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    throw error;
+    return null; // Return null instead of throwing
   }
 }
 

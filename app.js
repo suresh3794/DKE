@@ -4,7 +4,6 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
-const bodyParser = require('body-parser');
 const session = require('express-session');
 const connectToDatabase = require('./utils/database');
 
@@ -32,7 +31,7 @@ connectToDatabase()
   .catch(err => {
     console.error('MongoDB connection error:', err);
     console.log('Check that your .env file exists and contains MONGODB_URI');
-    
+
     // Continue app startup even if DB connection fails
     console.log('Starting app without database connection...');
     setupRoutes();
@@ -146,6 +145,9 @@ function setupRoutes() {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Export the Express app for serverless environments
+module.exports = app;
