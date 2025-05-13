@@ -47,8 +47,14 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// Set view engine
+// Set view engine with absolute path
+app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+
+// Add debug logging
+console.log('Current directory:', __dirname);
+console.log('Views directory:', path.join(__dirname, 'views'));
+console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
 
 // Make sure this middleware is placed BEFORE your route definitions
 // Make settings available globally
