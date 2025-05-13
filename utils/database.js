@@ -20,7 +20,11 @@ async function connectToDatabase() {
       serverSelectionTimeoutMS: 5000,
       // Remove bufferCommands: false to allow buffering
       socketTimeoutMS: 45000,
-      family: 4
+      family: 4,
+      // Add these options for Vercel deployment
+      retryWrites: true,
+      w: 'majority',
+      maxPoolSize: 10
     });
 
     console.log('MongoDB connection established successfully');
@@ -30,18 +34,6 @@ async function connectToDatabase() {
     console.error('MongoDB connection error:', error);
     throw error;
   }
-
-  mongoose.connection.on('connected', () => {
-    console.log('Mongoose connected to MongoDB');
-  });
-
-  mongoose.connection.on('error', (err) => {
-    console.error('Mongoose connection error:', err);
-  });
-
-  mongoose.connection.on('disconnected', () => {
-    console.log('Mongoose disconnected from MongoDB');
-  });
 }
 
 module.exports = connectToDatabase;
