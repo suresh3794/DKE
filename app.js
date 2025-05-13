@@ -62,72 +62,68 @@ console.log('Files in views directory:', require('fs').readdirSync(path.join(__d
 
 // Function to set up routes and models after DB connection
 function setupRoutes() {
-  // Now it's safe to access models
-  const User = mongoose.model('User');
-  const Gallery = mongoose.model('Gallery');
-  const Product = mongoose.model('Product');
-  const Testimonial = mongoose.model('Testimonial');
-  const Contact = mongoose.model('Contact');
-  const Setting = mongoose.model('Setting');
-  
-  // Make settings available globally - with better error handling
-  app.use(async (req, res, next) => {
-    try {
-      // Make sure database is connected before querying
-      if (mongoose.connection.readyState !== 1) {
-        console.log('Database not connected, using default settings');
-        useDefaultSettings(res);
-        return next();
-      }
-      
-      // Get settings
+  try {
+    // Only try to access models if database is connected
+    if (mongoose.connection.readyState === 1) {
+      console.log('Loading models from successful DB connection');
+      // Now it's safe to access models
+      const User = mongoose.model('User');
+      const Gallery = mongoose.model('Gallery');
+      const Product = mongoose.model('Product');
+      const Testimonial = mongoose.model('Testimonial');
+      const Contact = mongoose.model('Contact');
       const Setting = mongoose.model('Setting');
-      let settings = await Setting.findOne();
-      
-      if (!settings) {
-        console.log('No settings found, creating default settings');
-        settings = new Setting();
-        await settings.save();
-      }
-      
-      // Log settings for debugging
-      console.log('Loaded settings:', {
-        siteName: settings.siteName,
-        heroSlides: settings.heroSlides ? settings.heroSlides.map(s => s ? 'exists' : 'empty') : 'undefined'
-      });
-      
-      // Make settings available to all templates
-      res.locals.settings = settings;
-      next();
-    } catch (err) {
-      console.error('Error loading settings:', err);
-      useDefaultSettings(res);
-      next();
+    } else {
+      console.log('Database not connected, using mock models');
+      // Create mock models or handle the case when models aren't available
     }
-  });
+    
+    // Make settings available globally - with better error handling
+    app.use(async (req, res, next) => {
+      try {
+        // Make sure database is connected before querying
+        if (mongoose.connection.readyState !== 1) {
+          console.log('Database not connected, using default settings');
+          useDefaultSettings(res);
+          return next();
+        }
+        
+        // Get settings
+        try {
+          const Setting = mongoose.model('Setting');
+          let settings = await Setting.findOne();
+          
+          if (!settings) {
+            console.log('No settings found, using default settings');
+            useDefaultSettings(res);
+          } else {
+            res.locals.settings = settings;
+          }
+        } catch (modelError) {
+          console.error('Error accessing Setting model:', modelError);
+          useDefaultSettings(res);
+        }
+        
+        next();
+      } catch (err) {
+        console.error('Error loading settings:', err);
+        useDefaultSettings(res);
+        next();
+      }
+    });
 
-  // Helper function for default settings
-  function useDefaultSettings(res) {
-    res.locals.settings = {
-      siteName: 'Dignity Kitchen',
-      siteTagline: 'Quality Kitchen Products',
-      contactEmail: 'contact@dignitykitchen.com',
-      contactPhone: '+1 (555) 123-4567',
-      contactAddress: '123 Main Street, City, Country',
-      socialFacebook: 'https://facebook.com/',
-      socialInstagram: 'https://instagram.com/',
-      socialTwitter: 'https://twitter.com/',
-      aboutText: 'Welcome to Dignity Kitchen, where we provide high-quality kitchen products.',
-      footerText: '© Dignity Kitchen. All rights reserved.'
-    };
+    const publicRoutes = require('./routes/public');
+    const adminRoutes = require('./routes/admin');
+
+    // Routes
+    app.use('/', publicRoutes);
+    app.use('/admin', adminRoutes);
+  } catch (error) {
+    console.error('Error in setupRoutes:', error);
+    // Continue with basic functionality
+    const publicRoutes = require('./routes/public');
+    app.use('/', publicRoutes);
   }
-
-  const publicRoutes = require('./routes/public');
-  const adminRoutes = require('./routes/admin');
-
-  // Routes
-  app.use('/', publicRoutes);
-  app.use('/admin', adminRoutes);
 }
 
 // Start server

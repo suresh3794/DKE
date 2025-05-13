@@ -4,6 +4,7 @@ let cachedConnection = null;
 
 async function connectToDatabase() {
   if (cachedConnection) {
+    console.log('Using cached database connection');
     return cachedConnection;
   }
 
@@ -14,17 +15,19 @@ async function connectToDatabase() {
   }
 
   try {
+    // Add serverless-friendly options
     const connection = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      // Remove bufferCommands: false to allow buffering
+      serverSelectionTimeoutMS: 15000, // Increase timeout
       socketTimeoutMS: 45000,
       family: 4,
-      // Add these options for Vercel deployment
       retryWrites: true,
       w: 'majority',
-      maxPoolSize: 10
+      maxPoolSize: 10,
+      // Add these for serverless environments
+      bufferCommands: false, // Disable buffering for serverless
+      autoCreate: false      // Don't auto-create collections
     });
 
     console.log('MongoDB connection established successfully');
