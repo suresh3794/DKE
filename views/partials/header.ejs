@@ -18,6 +18,18 @@
         <link rel="stylesheet" href="/css/contact.css">
     <% } %>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/mobile-menu.js"></script>
+    <script>
+        // Ensure mobile menu is properly initialized
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force recalculation of menu styles
+            const menu = document.querySelector('.menu');
+            if (menu) {
+                // Force a reflow
+                void menu.offsetWidth;
+            }
+        });
+    </script>
 </head>
 <body>
     <header>

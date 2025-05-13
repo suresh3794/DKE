@@ -10,15 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // You might need to add specific code here to prevent automatic form handling
   }
   
-  // Mobile menu toggle
-  const menuBtn = document.querySelector('.mobile-menu-btn');
-  const menu = document.querySelector('.menu');
-  
-  if (menuBtn && menu) {
-      menuBtn.addEventListener('click', function() {
-          menu.classList.toggle('active');
-      });
-  }
+  // Note: Mobile menu is now handled in mobile-menu.js
   
   // Slider functionality for homepage
   const slides = document.querySelectorAll('.slide');
