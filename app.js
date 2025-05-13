@@ -172,19 +172,56 @@ function setupRoutes() {
     
     // Add a 404 handler for any unmatched routes
     app.use((req, res) => {
-      res.status(404).render('error', { 
-        message: 'Page not found', 
-        error: { status: 404, stack: '' } 
-      });
+      console.log(`404 Not Found: ${req.originalUrl}`);
+      res.status(404).send(`
+        <html>
+          <head>
+            <title>Page Not Found</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+              h1 { color: #333; }
+              a { color: #3498db; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+            </style>
+          </head>
+          <body>
+            <h1>404 - Page Not Found</h1>
+            <p>The page you are looking for does not exist.</p>
+            <a href="/">Return to Homepage</a>
+          </body>
+        </html>
+      `);
     });
     
     // Add error handler
     app.use((err, req, res, next) => {
-      console.error(err.stack);
-      res.status(err.status || 500).render('error', {
-        message: err.message,
-        error: process.env.NODE_ENV === 'development' ? err : {}
-      });
+      // Log the error for debugging
+      console.error('Application error:', err);
+      
+      // Don't expose error details in production
+      const errorMessage = process.env.NODE_ENV === 'development' 
+        ? err.message || 'Internal Server Error'
+        : 'Something went wrong';
+      
+      // Send a simple HTML response
+      res.status(500).send(`
+        <html>
+          <head>
+            <title>Error</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+              h1 { color: #e74c3c; }
+              a { color: #3498db; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+            </style>
+          </head>
+          <body>
+            <h1>Oops! Something went wrong</h1>
+            <p>${errorMessage}</p>
+            <a href="/">Return to Homepage</a>
+          </body>
+        </html>
+      `);
     });
   } catch (error) {
     console.error('Error in setupRoutes:', error);
