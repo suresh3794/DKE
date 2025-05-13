@@ -9,23 +9,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Change icon based on menu state
             const icon = this.querySelector('i');
-            if (menu.classList.contains('active')) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
+            if (icon) {
+                if (menu.classList.contains('active')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
             }
         });
     }
     
     // Close menu when clicking outside
     document.addEventListener('click', function(event) {
-        if (!menu.contains(event.target) && !mobileMenuBtn.contains(event.target) && menu.classList.contains('active')) {
+        if (menu && mobileMenuBtn && 
+            !menu.contains(event.target) && 
+            !mobileMenuBtn.contains(event.target) && 
+            menu.classList.contains('active')) {
+            
             menu.classList.remove('active');
             const icon = mobileMenuBtn.querySelector('i');
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
+            if (icon) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
         }
     });
     
