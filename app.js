@@ -8,23 +8,25 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const connectToDatabase = require('./utils/database');
 
+// Set strictQuery to suppress deprecation warning
+mongoose.set('strictQuery', true);
+
 // Initialize app
 const app = express();
+
+// Load all models regardless of connection status
+// This ensures schemas are registered even if DB connection fails
+require('./models/User');
+require('./models/Gallery');
+require('./models/Product');
+require('./models/Testimonial');
+require('./models/Contact');
+require('./models/Setting');
 
 // Connect to MongoDB at startup with better error handling
 connectToDatabase()
   .then(() => {
     console.log('MongoDB connected successfully');
-    
-    // Only load models after successful connection
-    require('./models/User');
-    require('./models/Gallery');
-    require('./models/Product');
-    require('./models/Testimonial');
-    require('./models/Contact');
-    require('./models/Setting');
-    
-    // IMPORTANT: Only access models after they've been registered
     setupRoutes();
   })
   .catch(err => {
@@ -45,11 +47,27 @@ mongoose.connection.on('error', err => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
-  secret: 'your-secret-key',
-  resave: false,
-  saveUninitialized: true
-}));
+
+// Use a more production-ready session store if MongoDB is connected
+if (mongoose.connection.readyState === 1) {
+  const MongoStore = require('connect-mongo');
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ 
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 14 * 24 * 60 * 60 // 14 days
+    })
+  }));
+} else {
+  // Fallback to memory store with warning
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: true
+  }));
+}
 
 // Set view engine with absolute path
 app.set('views', path.join(__dirname, 'views'));

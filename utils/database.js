@@ -15,11 +15,12 @@ async function connectToDatabase() {
   }
 
   try {
+    console.log('Attempting to connect to MongoDB...');
     // Add serverless-friendly options
     const connection = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 15000, // Increase timeout
+      serverSelectionTimeoutMS: 30000, // Increase timeout further
       socketTimeoutMS: 45000,
       family: 4,
       retryWrites: true,
