@@ -5,7 +5,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const session = require('express-session');
-const connectToDatabase = require('./utils/database');
+const { connectToDatabase, isConnected } = require('./utils/database');
 
 // Set strictQuery to suppress deprecation warning
 mongoose.set('strictQuery', true);
@@ -22,24 +22,34 @@ require('./models/Testimonial');
 require('./models/Contact');
 require('./models/Setting');
 
-// Connect to MongoDB at startup with better error handling
+// MongoDB connection with better error handling
 connectToDatabase()
-  .then(() => {
-    console.log('MongoDB connected successfully');
-    setupRoutes();
+  .then((connection) => {
+    if (connection) {
+      console.log('MongoDB connected successfully');
+      setupRoutes();
+    } else {
+      console.log('Failed to connect to MongoDB, app will run with limited functionality');
+      setupRoutes();
+    }
   })
   .catch(err => {
     console.error('MongoDB connection error:', err);
     console.log('Check that your .env file exists and contains MONGODB_URI');
-
-    // Continue app startup even if DB connection fails
     console.log('Starting app without database connection...');
     setupRoutes();
   });
 
-// Handle MongoDB connection errors after initial connection
-mongoose.connection.on('error', err => {
-  console.error('MongoDB connection error:', err);
+// Add middleware to check connection status on each request
+app.use((req, res, next) => {
+  // If database is disconnected, try to reconnect
+  if (!isConnected() && mongoose.connection.readyState !== 1) {
+    console.log('Database not connected, attempting to reconnect...');
+    connectToDatabase().catch(err => {
+      console.error('Failed to reconnect to database:', err);
+    });
+  }
+  next();
 });
 
 // Middleware
@@ -109,7 +119,7 @@ function setupRoutes() {
     app.use(async (req, res, next) => {
       try {
         // Make sure database is connected before querying
-        if (mongoose.connection.readyState !== 1) {
+        if (!isConnected() || mongoose.connection.readyState !== 1) {
           console.log('Database not connected, using default settings');
           useDefaultSettings(res);
           return next();

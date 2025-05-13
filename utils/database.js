@@ -1,61 +1,59 @@
 const mongoose = require('mongoose');
 
-let cachedConnection = null;
+let isDbConnected = false;
 
+// MongoDB connection with better error handling and retry logic
 async function connectToDatabase() {
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    console.log('Using cached database connection');
-    return cachedConnection;
-  }
-
-  // Check if MONGODB_URI is defined
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    console.error('MONGODB_URI environment variable is not defined');
-    return null;
-  }
-
   try {
-    console.log('Attempting to connect to MongoDB...');
+    console.log("🔄 Attempting to connect to MongoDB...");
     
-    // Disconnect if there's a stale connection
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
+    // Check if MONGODB_URI is defined
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      console.error('MONGODB_URI environment variable is not defined');
+      return null;
     }
     
-    // Add serverless-friendly options
-    const connection = await mongoose.connect(uri, {
+    // Connect with proper options for replica sets
+    await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 30000, // Increase timeout further
-      socketTimeoutMS: 45000,
-      family: 4,
+      // These options help with replica set connections
       retryWrites: true,
-      w: 'majority',
-      maxPoolSize: 10,
-      // Add these for serverless environments
-      bufferCommands: false, // Disable buffering for serverless
-      autoCreate: false      // Don't auto-create collections
+      w: 'majority'
     });
-
-    // Add connection error handler
-    mongoose.connection.on('error', (err) => {
-      console.error('MongoDB connection error after initial connection:', err);
-    });
-
-    // Add disconnection handler
+    
+    console.log("✅ Connected to MongoDB successfully");
+    isDbConnected = true;
+    
+    // Set up connection event handlers
     mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
-      cachedConnection = null;
+      console.log('❌ MongoDB disconnected');
+      isDbConnected = false;
+      // Try to reconnect
+      setTimeout(connectToDatabase, 5000);
     });
-
-    console.log('MongoDB connection established successfully');
-    cachedConnection = connection;
-    return connection;
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    return null; // Return null instead of throwing
+    
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err);
+      isDbConnected = false;
+    });
+    
+    return mongoose.connection;
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    isDbConnected = false;
+    
+    // Retry connection after 5 seconds
+    console.log("🔄 Retrying connection in 5 seconds...");
+    setTimeout(connectToDatabase, 5000);
+    
+    return null;
   }
 }
 
-module.exports = connectToDatabase;
+// Export the connection function and connection status
+module.exports = {
+  connectToDatabase,
+  isConnected: () => isDbConnected
+};
