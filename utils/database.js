@@ -13,17 +13,35 @@ async function connectToDatabase() {
     throw new Error('MONGODB_URI environment variable is not defined');
   }
 
-  const connection = await mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-    bufferCommands: false,
-    socketTimeoutMS: 45000,
-    family: 4
+  try {
+    const connection = await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      // Remove bufferCommands: false to allow buffering
+      socketTimeoutMS: 45000,
+      family: 4
+    });
+
+    console.log('MongoDB connection established successfully');
+    cachedConnection = connection;
+    return connection;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+
+  mongoose.connection.on('connected', () => {
+    console.log('Mongoose connected to MongoDB');
   });
 
-  cachedConnection = connection;
-  return connection;
+  mongoose.connection.on('error', (err) => {
+    console.error('Mongoose connection error:', err);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.log('Mongoose disconnected from MongoDB');
+  });
 }
 
 module.exports = connectToDatabase;

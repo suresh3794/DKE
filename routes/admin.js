@@ -6,6 +6,12 @@ const path = require('path');
 const fs = require('fs');
 const Setting = require('../models/Setting');
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../public/uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
@@ -18,17 +24,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5000000 }, // 5MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: function(req, file, cb) {
-    const filetypes = /jpeg|jpg|png|gif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const filetypes = /jpeg|jpg|png|gif|webp/;
     const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     
     if (mimetype && extname) {
       return cb(null, true);
-    } else {
-      cb('Error: Images only (jpeg, jpg, png, gif)!');
     }
+    cb(new Error('Only image files are allowed!'));
   }
 });
 
@@ -693,6 +698,9 @@ router.get('/settings/slide/:index', isAuthenticated, async (req, res) => {
 // Update slide
 router.post('/settings/slide/:index', isAuthenticated, upload.single('image'), async (req, res) => {
   try {
+    console.log('Slide update request received for index:', req.params.index);
+    console.log('File uploaded:', req.file);
+    
     const slideIndex = parseInt(req.params.index);
     
     if (isNaN(slideIndex) || slideIndex < 0 || slideIndex > 5) {
@@ -727,15 +735,21 @@ router.post('/settings/slide/:index', isAuthenticated, upload.single('image'), a
       }
     }
     
+    // Add more logging
+    console.log('Settings before update:', settings);
+    
     // Update slide image
     settings.heroSlides[slideIndex] = `/uploads/${req.file.filename}`;
     settings.updatedAt = Date.now();
     
+    console.log('Settings after update:', settings);
+    
     await settings.save();
+    console.log('Settings saved successfully');
     
     res.redirect(`/admin/settings?message=Slide ${slideIndex + 1} updated successfully`);
   } catch (err) {
-    console.error(err);
+    console.error('Error updating slide:', err);
     res.redirect(`/admin/settings/slide/${req.params.index}?error=Failed to update slide`);
   }
 });

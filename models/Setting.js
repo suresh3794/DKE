@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const SettingSchema = new mongoose.Schema({
+const SettingSchema = new Schema({
   siteName: {
     type: String,
     default: 'Dignity Kitchen'
@@ -43,19 +44,14 @@ const SettingSchema = new mongoose.Schema({
   },
   heroSlides: {
     type: [String],
-    default: [
-      '/images/hero/slide1.jpg',
-      '/images/hero/slide2.jpg',
-      '/images/hero/slide3.jpg',
-      '/images/hero/slide4.jpg',
-      '/images/hero/slide5.jpg',
-      '/images/hero/slide6.jpg'
-    ]
+    default: Array(6).fill('')
   },
   updatedAt: {
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Setting', SettingSchema);

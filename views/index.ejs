@@ -14,39 +14,19 @@
     <section class="hero">
         <div class="hero-slider">
             <!-- Slides -->
-            <div class="slide active">
-                <img src="<%= settings.heroSlides && settings.heroSlides[0] ? settings.heroSlides[0] : '/images/hero/slide1.jpg' %>" alt="Kitchen Equipment">
-                <div class="slide-overlay"></div>
-            </div>
-            <div class="slide">
-                <img src="<%= settings.heroSlides && settings.heroSlides[1] ? settings.heroSlides[1] : '/images/hero/slide2.jpg' %>" alt="Professional Kitchen">
-                <div class="slide-overlay"></div>
-            </div>
-            <div class="slide">
-                <img src="<%= settings.heroSlides && settings.heroSlides[2] ? settings.heroSlides[2] : '/images/hero/slide3.jpg' %>" alt="Restaurant Equipment">
-                <div class="slide-overlay"></div>
-            </div>
-            <div class="slide">
-                <img src="<%= settings.heroSlides && settings.heroSlides[3] ? settings.heroSlides[3] : '/images/hero/slide4.jpg' %>" alt="Kitchen Appliances">
-                <div class="slide-overlay"></div>
-            </div>
-            <div class="slide">
-                <img src="<%= settings.heroSlides && settings.heroSlides[4] ? settings.heroSlides[4] : '/images/hero/slide5.jpg' %>" alt="Cooking Equipment">
-                <div class="slide-overlay"></div>
-            </div>
-            <div class="slide">
-                <img src="<%= settings.heroSlides && settings.heroSlides[5] ? settings.heroSlides[5] : '/images/hero/slide6.jpg' %>" alt="Food Preparation">
-                <div class="slide-overlay"></div>
-            </div>
+            <% for(let i = 0; i < 6; i++) { %>
+                <div class="slide <%= i === 0 ? 'active' : '' %>">
+                    <img src="<%= settings.heroSlides && settings.heroSlides[i] ? settings.heroSlides[i] : `/images/hero/slide${i+1}.jpg` %>" 
+                         alt="Kitchen Equipment Slide <%= i+1 %>">
+                    <div class="slide-overlay"></div>
+                </div>
+            <% } %>
             
             <!-- Slide indicators -->
             <div class="slide-indicators">
-                <span class="indicator active" data-slide="0"></span>
-                <span class="indicator" data-slide="1"></span>
-                <span class="indicator" data-slide="2"></span>
-                <span class="indicator" data-slide="3"></span>
-                <span class="indicator" data-slide="4"></span>
-                <span class="indicator" data-slide="5"></span>
+                <% for(let i = 0; i < 6; i++) { %>
+                    <span class="indicator <%= i === 0 ? 'active' : '' %>" data-slide="<%= i %>"></span>
+                <% } %>
             </div>
         </div>
         

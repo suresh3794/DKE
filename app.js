@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const Setting = require('./models/Setting');
 const connectToDatabase = require('./utils/database');
 
 // Initialize app
@@ -14,32 +13,33 @@ const app = express();
 
 // Connect to MongoDB at startup with better error handling
 connectToDatabase()
-  .then(() => console.log('MongoDB connected successfully'))
+  .then(() => {
+    console.log('MongoDB connected successfully');
+    
+    // Only load models after successful connection
+    require('./models/User');
+    require('./models/Gallery');
+    require('./models/Product');
+    require('./models/Testimonial');
+    require('./models/Contact');
+    require('./models/Setting');
+    
+    // IMPORTANT: Only access models after they've been registered
+    setupRoutes();
+  })
   .catch(err => {
     console.error('MongoDB connection error:', err);
     console.log('Check that your .env file exists and contains MONGODB_URI');
     
     // Continue app startup even if DB connection fails
     console.log('Starting app without database connection...');
+    setupRoutes();
   });
 
 // Handle MongoDB connection errors after initial connection
 mongoose.connection.on('error', err => {
   console.error('MongoDB connection error:', err);
 });
-
-// Load models
-require('./models/User');
-require('./models/Gallery');
-require('./models/Product');
-require('./models/Testimonial');
-require('./models/Contact');
-
-const User = mongoose.model('User');
-const Gallery = mongoose.model('Gallery');
-const Product = mongoose.model('Product');
-const Testimonial = mongoose.model('Testimonial');
-const Contact = mongoose.model('Contact');
 
 // Middleware
 app.use(express.json());
@@ -60,45 +60,54 @@ console.log('Current directory:', __dirname);
 console.log('Views directory:', path.join(__dirname, 'views'));
 console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
 
-// Make settings available globally - with better error handling
-app.use(async (req, res, next) => {
-  try {
-    // Get settings or create default if not exists
-    const Setting = require('./models/Setting');
-    
-    // Set a timeout for the database operation
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database operation timed out')), 5000)
-    );
-    
-    // Race the database operation against the timeout
-    let settings = await Promise.race([
-      Setting.findOne().exec(),
-      timeoutPromise
-    ]);
-    
-    if (!settings) {
-      console.log('No settings found, using defaults');
-      settings = {
-        siteName: 'Dignity Kitchen',
-        siteTagline: 'Quality Kitchen Products',
-        contactEmail: 'contact@dignitykitchen.com',
-        contactPhone: '+1 (555) 123-4567',
-        contactAddress: '123 Main Street, City, Country',
-        socialFacebook: 'https://facebook.com/',
-        socialInstagram: 'https://instagram.com/',
-        socialTwitter: 'https://twitter.com/',
-        aboutText: 'Welcome to Dignity Kitchen, where we provide high-quality kitchen products.',
-        footerText: '© Dignity Kitchen. All rights reserved.'
-      };
+// Function to set up routes and models after DB connection
+function setupRoutes() {
+  // Now it's safe to access models
+  const User = mongoose.model('User');
+  const Gallery = mongoose.model('Gallery');
+  const Product = mongoose.model('Product');
+  const Testimonial = mongoose.model('Testimonial');
+  const Contact = mongoose.model('Contact');
+  const Setting = mongoose.model('Setting');
+  
+  // Make settings available globally - with better error handling
+  app.use(async (req, res, next) => {
+    try {
+      // Make sure database is connected before querying
+      if (mongoose.connection.readyState !== 1) {
+        console.log('Database not connected, using default settings');
+        useDefaultSettings(res);
+        return next();
+      }
+      
+      // Get settings
+      const Setting = mongoose.model('Setting');
+      let settings = await Setting.findOne();
+      
+      if (!settings) {
+        console.log('No settings found, creating default settings');
+        settings = new Setting();
+        await settings.save();
+      }
+      
+      // Log settings for debugging
+      console.log('Loaded settings:', {
+        siteName: settings.siteName,
+        heroSlides: settings.heroSlides ? settings.heroSlides.map(s => s ? 'exists' : 'empty') : 'undefined'
+      });
+      
+      // Make settings available to all templates
+      res.locals.settings = settings;
+      next();
+    } catch (err) {
+      console.error('Error loading settings:', err);
+      useDefaultSettings(res);
+      next();
     }
-    
-    // Make settings available to all templates
-    res.locals.settings = settings;
-    next();
-  } catch (err) {
-    console.error('Error loading settings:', err);
-    // Continue even if settings fail to load
+  });
+
+  // Helper function for default settings
+  function useDefaultSettings(res) {
     res.locals.settings = {
       siteName: 'Dignity Kitchen',
       siteTagline: 'Quality Kitchen Products',
@@ -111,16 +120,15 @@ app.use(async (req, res, next) => {
       aboutText: 'Welcome to Dignity Kitchen, where we provide high-quality kitchen products.',
       footerText: '© Dignity Kitchen. All rights reserved.'
     };
-    next();
   }
-});
 
-const publicRoutes = require('./routes/public');
-const adminRoutes = require('./routes/admin');
+  const publicRoutes = require('./routes/public');
+  const adminRoutes = require('./routes/admin');
 
-// Routes
-app.use('/', publicRoutes);
-app.use('/admin', adminRoutes);
+  // Routes
+  app.use('/', publicRoutes);
+  app.use('/admin', adminRoutes);
+}
 
 // Start server
 const PORT = process.env.PORT || 3000;
