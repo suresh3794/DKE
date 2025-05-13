@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Settings - Dignity Kitchen</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .settings-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .settings-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .settings-section h3 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        
+        .btn-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .section-description {
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .hero-slides-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .hero-slide-item {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .slide-number {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 12px;
+            font-weight: 500;
+        }
+        
+        .slide-preview {
+            height: 150px;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .slide-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .no-image {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .slide-actions {
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li class="active"><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <header class="admin-header">
+                <h1>Site Settings</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                </div>
+            </header>
+            
+            <% if (typeof message !== 'undefined' && message) { %>
+                <div class="message success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <%= message %>
+                </div>
+            <% } %>
+            
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="message error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <%= error %>
+                </div>
+            <% } %>
+            
+            <div class="settings-container">
+                <form action="/admin/settings" method="POST">
+                    <div class="settings-section">
+                        <h3>General Settings</h3>
+                        <div class="form-group">
+                            <label for="siteName">Site Name</label>
+                            <input type="text" id="siteName" name="siteName" class="form-control" value="<%= settings.siteName %>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="siteTagline">Site Tagline</label>
+                            <input type="text" id="siteTagline" name="siteTagline" class="form-control" value="<%= settings.siteTagline %>">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Contact Information</h3>
+                        <div class="form-group">
+                            <label for="contactEmail">Contact Email</label>
+                            <input type="email" id="contactEmail" name="contactEmail" class="form-control" value="<%= settings.contactEmail %>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contactPhone">Contact Phone</label>
+                            <input type="text" id="contactPhone" name="contactPhone" class="form-control" value="<%= settings.contactPhone %>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contactAddress">Contact Address</label>
+                            <input type="text" id="contactAddress" name="contactAddress" class="form-control" value="<%= settings.contactAddress %>">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Social Media</h3>
+                        <div class="form-group">
+                            <label for="socialFacebook">Facebook URL</label>
+                            <input type="url" id="socialFacebook" name="socialFacebook" class="form-control" value="<%= settings.socialFacebook %>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="socialInstagram">Instagram URL</label>
+                            <input type="url" id="socialInstagram" name="socialInstagram" class="form-control" value="<%= settings.socialInstagram %>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="socialTwitter">Twitter URL</label>
+                            <input type="url" id="socialTwitter" name="socialTwitter" class="form-control" value="<%= settings.socialTwitter %>">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Content</h3>
+                        <div class="form-group">
+                            <label for="aboutText">About Text</label>
+                            <textarea id="aboutText" name="aboutText" class="form-control" rows="4"><%= settings.aboutText %></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="footerText">Footer Text</label>
+                            <input type="text" id="footerText" name="footerText" class="form-control" value="<%= settings.footerText %>">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Hero Slider Images</h3>
+                        <p class="section-description">Manage the images that appear in the homepage slider. Recommended size: 1920x800 pixels.</p>
+                        
+                        <div class="hero-slides-container">
+                            <% for(let i = 0; i < 6; i++) { %>
+                                <div class="hero-slide-item">
+                                    <div class="slide-number">Slide <%= i+1 %></div>
+                                    <div class="slide-preview">
+                                        <% if(settings.heroSlides && settings.heroSlides[i]) { %>
+                                            <img src="<%= settings.heroSlides[i] %>" alt="Slide <%= i+1 %>">
+                                        <% } else { %>
+                                            <div class="no-image">No image</div>
+                                        <% } %>
+                                    </div>
+                                    <div class="slide-actions">
+                                        <a href="/admin/settings/slide/<%= i %>" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i> Change Image
+                                        </a>
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-container">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+    
+    <script src="/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const saveBtn = form.querySelector('button[type="submit"]');
+            
+            form.addEventListener('submit', function() {
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                saveBtn.disabled = true;
+            });
+            
+            // If there's a success message, scroll to it
+            const successMessage = document.querySelector('.success-message');
+            if (successMessage) {
+                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Highlight the fields that were updated
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('.form-control');
+                    inputs.forEach(input => {
+                        input.style.transition = 'background-color 0.5s';
+                        input.style.backgroundColor = '#f0fff0';
+                        
+                        setTimeout(() => {
+                            input.style.backgroundColor = '';
+                        }, 2000);
+                    });
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>

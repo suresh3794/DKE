@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - <%= settings.siteName %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/contact.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <%- include('partials/header', { hideTopBar: true, page: 'contact' }) %>
+
+    <section class="page-banner">
+        <h1>Contact Us</h1>
+        <p>Get in touch with our team for inquiries and quotes</p>
+    </section>
+
+    <section class="contact-section">
+        <div class="container">
+            <% if (typeof success !== 'undefined' && success) { %>
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i> <%= success %>
+                </div>
+            <% } %>
+            
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <%= error %>
+                </div>
+            <% } %>
+            
+            <div class="contact-info-wrapper">
+                <div class="contact-info-grid">
+                    <div class="contact-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Our Location</h3>
+                        <p><%= settings.contactAddress %></p>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fas fa-phone"></i>
+                        <h3>Phone Number</h3>
+                        <p><%= settings.contactPhone %></p>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fas fa-envelope"></i>
+                        <h3>Email Address</h3>
+                        <p><%= settings.contactEmail %></p>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Business Hours</h3>
+                        <p>Monday - Friday: 9am - 6pm</p>
+                        <p>Saturday: 10am - 4pm</p>
+                    </div>
+                </div>
+                
+                <div class="contact-form">
+                    <h2>Send Us a Message</h2>
+                    <div id="formStatus">
+                        <% if (typeof success !== 'undefined' && success) { %>
+                            <div class="success-message">
+                                <i class="fas fa-check-circle"></i> <%= success %>
+                            </div>
+                        <% } %>
+                        
+                        <% if (typeof error !== 'undefined' && error) { %>
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i> <%= error %>
+                            </div>
+                        <% } %>
+                    </div>
+                    <form id="contactForm" action="/contact" method="POST">
+                        <div class="form-group">
+                            <label for="name">Your Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" required>
+                        </div>
+                        <% if (product) { %>
+                        <div class="form-group">
+                            <label for="product">Product</label>
+                            <input type="text" id="product" name="product" value="<%= product %>" readonly>
+                        </div>
+                        <% } %>
+                        <div class="form-group">
+                            <label for="message">Your Message</label>
+                            <textarea id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="map-section">
+        <div class="container">
+            <h2 class="section-title">Find Us</h2>
+            <div class="map-container">
+                <!-- Replace with your Google Maps embed code -->
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3885.5811767963!2d80.24518307575673!3d13.12967098695698!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a5265ea4c3b1f3f%3A0x63c60e674ffd680!2sGNT%20Rd%2C%20Erukkanchery%2C%20Chennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1689234567890!5m2!1sen!2sin" width="100%" height="450" frameborder="0" style="border:0;" allowfullscreen=""></iframe>
+            </div>
+        </div>
+    </section>
+    
+    <%- include('partials/footer') %>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/contact.js"></script>
+    <!-- At the bottom of your contact.ejs file, add this script to disable any fetch/AJAX calls -->
+    <script>
+        // Override any fetch or AJAX calls that might be happening elsewhere
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('contactForm');
+            if (form) {
+                // Remove any existing event listeners by cloning the form
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+                
+                // Add only basic validation
+                newForm.addEventListener('submit', function(e) {
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const subject = document.getElementById('subject').value;
+                    const message = document.getElementById('message').value;
+                    
+                    if (!name || !email || !subject || !message) {
+                        e.preventDefault();
+                        alert('Please fill in all required fields');
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
+    <!-- Add this at the bottom of your contact.ejs file -->
+    <script>
+        // Debug script to find what's causing the JSON parsing error
+        console.log('Contact page loaded');
+        
+        // Monitor all fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            console.log('Fetch called with:', arguments);
+            return originalFetch.apply(this, arguments)
+                .catch(error => {
+                    console.error('Fetch error details:', {
+                        url: arguments[0],
+                        options: arguments[1],
+                        error: error
+                    });
+                    throw error;
+                });
+        };
+        
+        // Monitor all XMLHttpRequest
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function() {
+            console.log('XMLHttpRequest opened with:', arguments);
+            return originalXHROpen.apply(this, arguments);
+        };
+        
+        // Log all script tags on the page
+        console.log('Scripts on this page:');
+        document.querySelectorAll('script').forEach((script, index) => {
+            console.log(`Script ${index}:`, {
+                src: script.src,
+                content: script.src ? '(external)' : script.innerHTML.substring(0, 100) + '...'
+            });
+        });
+    </script>
+</body>
+</html>

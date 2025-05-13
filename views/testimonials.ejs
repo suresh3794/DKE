@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Testimonials - Dignity Kitchen</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .testimonials-page {
+            padding: 80px 0;
+        }
+        
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .testimonial-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .testimonial-content {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #555;
+            margin-bottom: 20px;
+            position: relative;
+            padding-left: 25px;  /* Add padding for the quote mark */
+        }
+        
+        .testimonial-content::before {
+            content: '"';
+            font-size: 50px;
+            color: var(--primary-color);
+            opacity: 0.2;
+            position: absolute;
+            top: -15px;
+            left: 0;
+            font-family: serif;
+            z-index: 0;  /* Place behind the text */
+        }
+        
+        .testimonial-content p {
+            position: relative;
+            z-index: 1;  /* Ensure text is above the quote mark */
+        }
+        
+        .rating {
+            color: #FFD700;
+            margin-bottom: 20px;
+        }
+        
+        .client {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .client img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+        
+        .client h4 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--dark-color);
+        }
+        
+        .client p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #777;
+        }
+        
+        .page-intro {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 50px;
+        }
+        
+        .page-intro p {
+            font-size: 18px;
+            line-height: 1.7;
+            color: #555;
+        }
+        
+        @media (max-width: 768px) {
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <%- include('partials/header') %>
+    
+    <!-- Page Banner -->
+    <div class="page-banner">
+        <div class="container">
+            <h1>Client Testimonials</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Testimonials</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Testimonials Section -->
+    <section class="testimonials-page">
+        <div class="container">
+            <div class="page-intro">
+                <h2>What Our Clients Say About Us</h2>
+                <p>At Dignity Kitchen, we take pride in delivering exceptional kitchen equipment and services. 
+                   Don't just take our word for it - hear from our satisfied clients who have experienced 
+                   the quality and reliability of our products firsthand.</p>
+            </div>
+            
+            <div class="testimonials-grid">
+                <% if (testimonials && testimonials.length > 0) { %>
+                    <% testimonials.forEach(testimonial => { %>
+                        <div class="testimonial-card">
+                            <div class="testimonial-content">
+                                <p>"<%= testimonial.content %>"</p>
+                                <div class="rating">
+                                    <% for (let i = 0; i < 5; i++) { %>
+                                        <% if (i < testimonial.rating) { %>
+                                            <i class="fas fa-star"></i>
+                                        <% } else { %>
+                                            <i class="far fa-star"></i>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <div class="client">
+                                <% if (testimonial.imageUrl) { %>
+                                    <img src="<%= testimonial.imageUrl %>" alt="<%= testimonial.name %>">
+                                <% } else { %>
+                                    <img src="/images/default-avatar.png" alt="<%= testimonial.name %>">
+                                <% } %>
+                                <div>
+                                    <h4><%= testimonial.name %></h4>
+                                    <p><%= testimonial.position %><% if (testimonial.company) { %>, <%= testimonial.company %><% } %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="empty-state">
+                        <p>No testimonials available at the moment. Check back soon!</p>
+                    </div>
+                <% } %>
+            </div>
+            
+            <div class="cta-box">
+                <h3>Ready to Experience Our Quality?</h3>
+                <p>Join our growing list of satisfied clients and discover the Dignity Kitchen difference.</p>
+                <a href="/contact" class="btn primary-btn">Contact Us Today</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <%- include('partials/footer') %>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>

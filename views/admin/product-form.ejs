@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= product ? 'Edit' : 'Add' %> Product - Dignity Kitchen</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #e1e5eb;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            max-width: 300px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #555;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e5e5;
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            color: var(--accent-color);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .checkbox-group {
+            margin-bottom: 25px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-left: 35px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 22px;
+            width: 22px;
+            background-color: #fff;
+            border: 2px solid #e1e5eb;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        
+        .checkbox-container:hover input ~ .checkmark {
+            border-color: var(--secondary-color);
+        }
+        
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-container .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .form-text {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+            margin-left: 35px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li class="active"><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <header class="admin-header">
+                <h1><%= product && product._id ? 'Edit' : 'Add New' %> Product</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                </div>
+            </header>
+            
+            <div class="form-container">
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="error-message">
+                        <%= error %>
+                    </div>
+                <% } %>
+                
+                <form action="<%= product && product._id ? `/admin/products/edit/${product._id}` : '/admin/products/add' %>" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="name">Product Name</label>
+                        <input type="text" id="name" name="name" class="form-control" value="<%= product && product.name ? product.name : '' %>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" class="form-control" rows="4" required><%= product && product.description ? product.description : '' %></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" class="form-control" required>
+                            <option value="">Select a category</option>
+                            <option value="cooking" <%= product && product.category === 'cooking' ? 'selected' : '' %>>Cooking Equipment</option>
+                            <option value="refrigeration" <%= product && product.category === 'refrigeration' ? 'selected' : '' %>>Refrigeration</option>
+                            <option value="preparation" <%= product && product.category === 'preparation' ? 'selected' : '' %>>Food Preparation</option>
+                            <option value="storage" <%= product && product.category === 'storage' ? 'selected' : '' %>>Storage Solutions</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="featured" name="featured" <%= product && product.featured ? 'checked' : '' %>>
+                            <span class="checkmark"></span>
+                            Feature this product on homepage
+                        </label>
+                        <small class="form-text text-muted">Featured products will be displayed in the homepage carousel</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="image">
+                            <%= product && product._id ? 'Product Image (leave empty to keep current image)' : 'Product Image' %>
+                        </label>
+                        <input type="file" id="image" name="image" class="form-control" <%= product && product._id ? '' : 'required' %> accept="image/*">
+                        
+                        <% if (product && product.imageUrl) { %>
+                            <div class="image-preview">
+                                <img src="<%= product.imageUrl %>" alt="<%= product.name %>">
+                            </div>
+                        <% } %>
+                    </div>
+                    
+                    <div class="btn-container">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> <%= product && product._id ? 'Update' : 'Save' %> Product
+                        </button>
+                        <a href="/admin/products" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <script>
+        // Preview image before upload
+        document.getElementById('image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    let preview = document.querySelector('.image-preview');
+                    if (!preview) {
+                        preview = document.createElement('div');
+                        preview.className = 'image-preview';
+                        const img = document.createElement('img');
+                        preview.appendChild(img);
+                        e.target.parentNode.appendChild(preview);
+                    }
+                    preview.querySelector('img').src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>

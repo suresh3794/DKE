@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Dignity Kitchen</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li class="active"><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <header class="admin-header">
+                <h1>Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                </div>
+            </header>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <i class="fas fa-images"></i>
+                    <div class="stat-info">
+                        <h3>Gallery Items</h3>
+                        <p class="stat-number"><%= galleryCount %></p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-box"></i>
+                    <div class="stat-info">
+                        <h3>Products</h3>
+                        <p class="stat-number"><%= productCount %></p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-quote-right"></i>
+                    <div class="stat-info">
+                        <h3>Testimonials</h3>
+                        <p class="stat-number"><%= testimonialCount %></p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-envelope"></i>
+                    <div class="stat-info">
+                        <h3>New Messages</h3>
+                        <p class="stat-number"><%= newMessageCount %></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h2>Recent Activity</h2>
+                <div class="activity-list">
+                    <!-- Activity items would be dynamically generated -->
+                    <div class="activity-item">
+                        <span class="activity-time">Today, 10:30 AM</span>
+                        <p>New gallery image uploaded: "Commercial Kitchen Installation"</p>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-time">Yesterday, 3:45 PM</span>
+                        <p>New contact form submission from John Smith</p>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-time">Yesterday, 11:20 AM</span>
+                        <p>Product updated: "Industrial Refrigeration Unit"</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>
