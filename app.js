@@ -1,6 +1,15 @@
 // Load environment variables first, before any other imports
 require('dotenv').config();
 
+try {
+  // Test Cloudinary configuration
+  const { cloudinary } = require('./config/cloudinary');
+  console.log("Cloudinary configuration verified successfully");
+} catch (error) {
+  console.error("Cloudinary configuration error:", error.message);
+  console.log("Check your Cloudinary environment variables");
+}
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
