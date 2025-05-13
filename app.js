@@ -4,18 +4,49 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
+const bodyParser = require('body-parser');
 const session = require('express-session');
 const connectToDatabase = require('./utils/database');
 
 // Initialize app
 const app = express();
 
+// Connect to MongoDB at startup with better error handling
+connectToDatabase()
+  .then(() => {
+    console.log('MongoDB connected successfully');
+    
+    // Only load models after successful connection
+    require('./models/User');
+    require('./models/Gallery');
+    require('./models/Product');
+    require('./models/Testimonial');
+    require('./models/Contact');
+    require('./models/Setting');
+    
+    // IMPORTANT: Only access models after they've been registered
+    setupRoutes();
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    console.log('Check that your .env file exists and contains MONGODB_URI');
+    
+    // Continue app startup even if DB connection fails
+    console.log('Starting app without database connection...');
+    setupRoutes();
+  });
+
+// Handle MongoDB connection errors after initial connection
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+});
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: 'your-secret-key',
   resave: false,
   saveUninitialized: true
 }));
@@ -27,40 +58,18 @@ app.set('view engine', 'ejs');
 // Add debug logging
 console.log('Current directory:', __dirname);
 console.log('Views directory:', path.join(__dirname, 'views'));
-try {
-  console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
-} catch (err) {
-  console.error('Error reading views directory:', err);
-}
-
-// Connect to MongoDB at startup with better error handling
-connectToDatabase()
-  .then(() => {
-    console.log('MongoDB connected successfully');
-    
-    // Only load models after successful connection
-    // Import models directly to ensure they're registered
-    const User = require('./models/User');
-    const Gallery = require('./models/Gallery');
-    const Product = require('./models/Product');
-    const Testimonial = require('./models/Testimonial');
-    const Contact = require('./models/Contact');
-    const Setting = require('./models/Setting');
-    
-    // IMPORTANT: Only access models after they've been registered
-    setupRoutes(User, Gallery, Product, Testimonial, Contact, Setting);
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    console.log('Check that your .env file exists and contains MONGODB_URI');
-    
-    // Continue app startup even if DB connection fails
-    console.log('Starting app without database connection...');
-    setupRoutes();
-  });
+console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
 
 // Function to set up routes and models after DB connection
-function setupRoutes(User, Gallery, Product, Testimonial, Contact, Setting) {
+function setupRoutes() {
+  // Now it's safe to access models
+  const User = mongoose.model('User');
+  const Gallery = mongoose.model('Gallery');
+  const Product = mongoose.model('Product');
+  const Testimonial = mongoose.model('Testimonial');
+  const Contact = mongoose.model('Contact');
+  const Setting = mongoose.model('Setting');
+  
   // Make settings available globally - with better error handling
   app.use(async (req, res, next) => {
     try {
@@ -72,29 +81,23 @@ function setupRoutes(User, Gallery, Product, Testimonial, Contact, Setting) {
       }
       
       // Get settings
-      let settings;
-      try {
-        // Use the passed Setting model if available
-        if (Setting) {
-          settings = await Setting.findOne();
-        } else {
-          // Fallback to mongoose.model if Setting wasn't passed
-          const SettingModel = mongoose.model('Setting');
-          settings = await SettingModel.findOne();
-        }
-      } catch (modelError) {
-        console.error('Error getting Setting model:', modelError);
-        useDefaultSettings(res);
-        return next();
-      }
+      const Setting = mongoose.model('Setting');
+      let settings = await Setting.findOne();
       
       if (!settings) {
-        console.log('No settings found, using defaults');
-        useDefaultSettings(res);
-      } else {
-        // Make settings available to all templates
-        res.locals.settings = settings;
+        console.log('No settings found, creating default settings');
+        settings = new Setting();
+        await settings.save();
       }
+      
+      // Log settings for debugging
+      console.log('Loaded settings:', {
+        siteName: settings.siteName,
+        heroSlides: settings.heroSlides ? settings.heroSlides.map(s => s ? 'exists' : 'empty') : 'undefined'
+      });
+      
+      // Make settings available to all templates
+      res.locals.settings = settings;
       next();
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -119,38 +122,12 @@ function setupRoutes(User, Gallery, Product, Testimonial, Contact, Setting) {
     };
   }
 
-  // Add a simple health check route
-  app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', dbConnected: mongoose.connection.readyState === 1 });
-  });
+  const publicRoutes = require('./routes/public');
+  const adminRoutes = require('./routes/admin');
 
-  // Add a fallback route for the root path
-  app.get('/', (req, res) => {
-    res.render('index');
-  });
-
-  try {
-    const publicRoutes = require('./routes/public');
-    app.use('/', publicRoutes);
-  } catch (err) {
-    console.error('Error loading public routes:', err);
-    // Add a fallback route if public routes fail to load
-    app.get('/', (req, res) => {
-      res.render('index');
-    });
-  }
-
-  try {
-    const adminRoutes = require('./routes/admin');
-    app.use('/admin', adminRoutes);
-  } catch (err) {
-    console.error('Error loading admin routes:', err);
-  }
-
-  // Add a 404 handler
-  app.use((req, res) => {
-    res.status(404).render('404', { title: 'Page Not Found' });
-  });
+  // Routes
+  app.use('/', publicRoutes);
+  app.use('/admin', adminRoutes);
 }
 
 // Start server
@@ -158,6 +135,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-// Export the Express API for Vercel
-module.exports = app;
