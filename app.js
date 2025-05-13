@@ -4,20 +4,15 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const Setting = require('./models/Setting');
+const connectToDatabase = require('./utils/database');
 
 // Initialize app
 const app = express();
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000,
-  // Auto-index is fine for small projects but not recommended for production
-  autoIndex: true
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
+// Connect to MongoDB at startup
+connectToDatabase()
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Handle MongoDB connection errors after initial connection
 mongoose.connection.on('error', err => {
@@ -56,17 +51,37 @@ console.log('Current directory:', __dirname);
 console.log('Views directory:', path.join(__dirname, 'views'));
 console.log('Files in views directory:', require('fs').readdirSync(path.join(__dirname, 'views')));
 
-// Make sure this middleware is placed BEFORE your route definitions
-// Make settings available globally
+// Make settings available globally - with better error handling
 app.use(async (req, res, next) => {
   try {
     // Get settings or create default if not exists
     const Setting = require('./models/Setting');
-    let settings = await Setting.findOne();
+    
+    // Set a timeout for the database operation
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database operation timed out')), 5000)
+    );
+    
+    // Race the database operation against the timeout
+    let settings = await Promise.race([
+      Setting.findOne().exec(),
+      timeoutPromise
+    ]);
     
     if (!settings) {
-      settings = new Setting();
-      await settings.save();
+      console.log('No settings found, using defaults');
+      settings = {
+        siteName: 'Dignity Kitchen',
+        siteTagline: 'Quality Kitchen Products',
+        contactEmail: 'contact@dignitykitchen.com',
+        contactPhone: '+1 (555) 123-4567',
+        contactAddress: '123 Main Street, City, Country',
+        socialFacebook: 'https://facebook.com/',
+        socialInstagram: 'https://instagram.com/',
+        socialTwitter: 'https://twitter.com/',
+        aboutText: 'Welcome to Dignity Kitchen, where we provide high-quality kitchen products.',
+        footerText: '© Dignity Kitchen. All rights reserved.'
+      };
     }
     
     // Make settings available to all templates
