@@ -2,98 +2,70 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-// Configure Cloudinary
+// Configure Cloudinary with individual credentials instead of URL
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Create storage engine for general uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'dignity-kitchen',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ quality: 'auto:good' }]
-  }
-});
-
-// Create storage engine for hero slides
-const heroSlideStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'dignity-kitchen/hero-slides',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 1920, height: 800, crop: 'fill', quality: 'auto:good' }]
-  }
-});
-
-// Create storage engine for gallery
+// Create storage engines for different upload types
 const galleryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'dignity-kitchen/gallery',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 1200, height: 800, crop: 'limit', quality: 'auto:good' }]
+    folder: 'gallery',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif']
   }
 });
 
-// Create storage engine for products
 const productStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'dignity-kitchen/products',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto:good' }]
+    folder: 'products',
+    allowed_formats: ['jpg', 'jpeg', 'png']
   }
 });
 
-// Create storage engine for testimonials
 const testimonialStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'dignity-kitchen/testimonials',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto:good' }]
+    folder: 'testimonials',
+    allowed_formats: ['jpg', 'jpeg', 'png']
   }
 });
 
-// Create multer instances
-const upload = multer({ storage: storage });
-const heroSlideUpload = multer({ storage: heroSlideStorage });
+const heroSlideStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'hero-slides',
+    allowed_formats: ['jpg', 'jpeg', 'png']
+  }
+});
+
+// Create multer upload instances
 const galleryUpload = multer({ storage: galleryStorage });
 const productUpload = multer({ storage: productStorage });
 const testimonialUpload = multer({ storage: testimonialStorage });
+const heroSlideUpload = multer({ storage: heroSlideStorage });
 
-// Helper function to delete image from Cloudinary
+// Function to delete images from Cloudinary
 const deleteImage = async (publicId) => {
-  if (!publicId) return;
-  
   try {
-    // Extract public ID from URL if needed
-    let id = publicId;
-    if (publicId.includes('cloudinary.com')) {
-      // Extract the public ID from the URL
-      const parts = publicId.split('/');
-      const filename = parts[parts.length - 1];
-      const folderPath = parts.slice(parts.indexOf('dignity-kitchen')).join('/');
-      id = folderPath.split('.')[0]; // Remove file extension
-    }
+    if (!publicId) return { success: false, message: 'No public ID provided' };
     
-    await cloudinary.uploader.destroy(id);
-    console.log(`Deleted image: ${id}`);
+    const result = await cloudinary.uploader.destroy(publicId);
+    return { success: result.result === 'ok', message: result.result };
   } catch (error) {
-    console.error(`Error deleting image from Cloudinary: ${error.message}`);
+    console.error('Error deleting image from Cloudinary:', error);
+    return { success: false, message: error.message };
   }
 };
 
 module.exports = {
   cloudinary,
-  upload,
-  heroSlideUpload,
   galleryUpload,
   productUpload,
   testimonialUpload,
+  heroSlideUpload,
   deleteImage
 };
