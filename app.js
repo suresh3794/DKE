@@ -1,3 +1,6 @@
+// Load environment variables first, before any other imports
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -9,10 +12,16 @@ const connectToDatabase = require('./utils/database');
 // Initialize app
 const app = express();
 
-// Connect to MongoDB at startup
+// Connect to MongoDB at startup with better error handling
 connectToDatabase()
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    console.log('Check that your .env file exists and contains MONGODB_URI');
+    
+    // Continue app startup even if DB connection fails
+    console.log('Starting app without database connection...');
+  });
 
 // Handle MongoDB connection errors after initial connection
 mongoose.connection.on('error', err => {
