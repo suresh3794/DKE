@@ -73,10 +73,11 @@ router.get('/api/dashboard', isAuthenticated, async (req, res) => {
 
 // Check if user is authenticated (for AJAX requests)
 router.get('/check-auth', (req, res) => {
+  console.log('Check auth session:', req.session);
   if (req.session && req.session.isAuthenticated) {
-    res.status(200).send('Authenticated');
+    res.status(200).json({ authenticated: true });
   } else {
-    res.status(401).send('Not authenticated');
+    res.status(401).json({ authenticated: false });
   }
 });
 
@@ -106,6 +107,9 @@ router.post('/login', async (req, res) => {
     // Set session variables
     req.session.userId = user._id;
     req.session.isAuthenticated = true;
+    
+    // Log session data for debugging
+    console.log('Session data:', req.session);
     
     // Save session before redirecting
     req.session.save((err) => {

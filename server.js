@@ -139,7 +139,11 @@ function setupRoutes() {
     secret: process.env.SESSION_SECRET || 'default_secret',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
   }));
 
   // Set up view engine for any routes that still use render
