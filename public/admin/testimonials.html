@@ -385,11 +385,19 @@
         function renderTestimonials(testimonials) {
             const container = document.getElementById('testimonials-container');
             
+            // Default Cloudinary image URL
+            const defaultImageUrl = "https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg";
+            
             if (testimonials && testimonials.length > 0) {
                 let html = '<div class="testimonial-grid">';
                 
                 testimonials.forEach(testimonial => {
                     const createdDate = new Date(testimonial.createdAt).toLocaleDateString();
+                    
+                    // Check if image URL is valid and exists
+                    const imageUrl = testimonial.imageUrl && testimonial.imageUrl.trim() !== '' 
+                        ? testimonial.imageUrl 
+                        : defaultImageUrl;
                     
                     html += `
                         <div class="testimonial-card" data-featured="${testimonial.featured ? 'yes' : 'no'}" data-rating="${testimonial.rating}">
@@ -397,10 +405,7 @@
                             
                             <div class="testimonial-header">
                                 <div class="client-image">
-                                    ${testimonial.imageUrl 
-                                        ? `<img src="${testimonial.imageUrl}" alt="${testimonial.name}">`
-                                        : `<img src="/images/default-avatar.png" alt="${testimonial.name}">`
-                                    }
+                                    <img src="${imageUrl}" alt="${testimonial.name}" onerror="this.src='${defaultImageUrl}'">
                                 </div>
                                 <div class="client-info">
                                     <h3>${testimonial.name}</h3>

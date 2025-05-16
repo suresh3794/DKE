@@ -259,15 +259,8 @@
         
         // Function to load contacts
         function loadContacts() {
-            // Try multiple endpoints in sequence
-            fetch('/api/admin/contacts')
-                .then(response => {
-                    if (!response.ok) {
-                        console.log('First endpoint failed, trying second endpoint');
-                        return fetch('/admin/api/contacts');
-                    }
-                    return response;
-                })
+            // Use only the working endpoint
+            fetch('/admin/api/contacts')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to load contacts');
@@ -280,6 +273,16 @@
                 .catch(error => {
                     console.error('Error loading contacts:', error);
                     showMessage('error', 'Failed to load contact messages');
+                    
+                    // Show empty state on error
+                    document.getElementById('contacts-container').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Error Loading Messages</h3>
+                            <p>${error.message}</p>
+                            <button onclick="loadContacts()" class="btn">Try Again</button>
+                        </div>
+                    `;
                 });
         }
         

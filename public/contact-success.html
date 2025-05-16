@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="/css/contact.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .contact-section{
+            padding: 0;
+        }
         .success-container {
             text-align: center;
             padding: 60px 20px;
@@ -51,15 +54,28 @@
     </style>
 </head>
 <body>
-    <!-- Header will be loaded dynamically -->
-    <div id="header-container"></div>
-
-    <section class="page-banner">
-        <h1>Message Sent</h1>
-        <p>Thank you for contacting us</p>
-    </section>
-
-    <section class="contact-section">
+    <header>
+    <nav>
+        <div class="logo">
+            <img src="/images/logo.png" alt="Logo">
+            <div class="logo-text">
+                <h1 id="header-site-name"></h1>
+                <p id="header-site-tagline"></p>
+            </div>
+        </div>
+        <ul class="menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/products">Products</a></li>
+            <li><a href="/gallery">Gallery</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+        <div class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </div>
+    </nav>
+    </header>
+     <section class="contact-section">
         <div class="container">
             <div class="success-container">
                 <div class="success-icon">
@@ -79,7 +95,24 @@
 
     <script src="/js/main.js"></script>
     <script>
+        // Configure logging
+        const VERBOSE_LOGGING = false; // Set to true to enable detailed logging
+        
+        // Custom logger
+        const logger = window.logger || {
+            log: (...args) => {
+                if (VERBOSE_LOGGING) {
+                    console.log(...args);
+                }
+            },
+            // Always log errors and warnings
+            error: (...args) => console.error(...args),
+            warn: (...args) => console.warn(...args)
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
+            logger.log('Contact success page DOM loaded');
+            
             // Load header and footer
             loadComponent('header', 'header-container', { page: 'contact' });
             loadComponent('footer', 'footer-container');
@@ -90,16 +123,64 @@
 
         // Function to load header and footer components
         function loadComponent(component, targetId, data = {}) {
+            logger.log(`Loading component: ${component}`);
             fetch(`/components/${component}.html`)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${component} component: ${response.status}`);
+                    }
+                    return response.text();
+                })
                 .then(html => {
-                    document.getElementById(targetId).innerHTML = html;
+                    const targetElement = document.getElementById(targetId);
+                    if (!targetElement) {
+                        logger.error(`Target element #${targetId} not found`);
+                        return;
+                    }
+                    
+                    targetElement.innerHTML = html;
+                    
+                    // Execute any scripts in the component
+                    const scripts = targetElement.getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = scripts[i];
+                        const scriptClone = document.createElement('script');
+                        
+                        // Copy attributes
+                        for (let j = 0; j < script.attributes.length; j++) {
+                            const attr = script.attributes[j];
+                            scriptClone.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Copy content
+                        scriptClone.textContent = script.textContent;
+                        
+                        // Replace the original script with the clone to execute it
+                        script.parentNode.replaceChild(scriptClone, script);
+                    }
+                    
                     if (component === 'header') {
                         // Initialize any header-specific JS
                         highlightCurrentPage(data.page);
                     }
+                    
+                    logger.log(`Component ${component} loaded successfully`);
                 })
-                .catch(error => console.error(`Error loading ${component}:`, error));
+                .catch(error => {
+                    logger.error(`Error loading ${component}:`, error);
+                    // Add fallback content if component fails to load
+                    if (component === 'footer') {
+                        document.getElementById(targetId).innerHTML = `
+                            <footer>
+                                <div class="container">
+                                    <div class="footer-content">
+                                        <p>&copy; 2023 Dignity Kitchen Equipments. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </footer>
+                        `;
+                    }
+                });
         }
 
         // Function to highlight current page in navigation
@@ -114,14 +195,22 @@
         
         // Function to load settings
         function loadSettings() {
+            logger.log('Loading settings for contact success page');
             fetch('/api/settings')
-                .then(response => response.json())
+                .then(response => {
+                    logger.log('Settings response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`Failed to load settings: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(settings => {
+                    logger.log('Settings loaded:', settings);
                     // Update page title
-                    document.title = `Message Sent - ${settings.siteName}`;
+                    document.title = `Message Sent - ${settings.siteName || 'Dignity Kitchen Equipments'}`;
                 })
                 .catch(error => {
-                    console.error('Error loading settings:', error);
+                    logger.error('Error loading settings:', error);
                 });
         }
     </script>

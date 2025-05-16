@@ -53,22 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to load products
     window.loadProducts = function() {
-        // Try multiple endpoints in sequence
-        fetch('/api/admin/products')
-            .then(response => {
-                if (!response.ok) {
-                    // If first endpoint fails, try the second one
-                    return fetch('/admin/products-list');
-                }
-                return response;
-            })
-            .then(response => {
-                if (!response.ok) {
-                    // If second endpoint fails, try the third one
-                    return fetch('/api/products');
-                }
-                return response;
-            })
+        // Use only the endpoint that works
+        fetch('/api/products-list')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to load products');
@@ -88,16 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to load testimonials
     window.loadTestimonials = function() {
-        // Try multiple endpoints in sequence
-        fetch('/api/admin/testimonials')
-            .then(response => {
-                if (!response.ok) {
-                    // If first endpoint fails, try the second one
-                    console.log('First endpoint failed, trying second endpoint');
-                    return fetch('/admin/api/testimonials');
-                }
-                return response;
-            })
+        // Use only the working endpoint
+        fetch('/api/testimonials')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to load testimonials');
@@ -141,5 +119,47 @@ document.addEventListener('DOMContentLoaded', function() {
         if (successMsg) {
             showMessage('success', decodeURIComponent(successMsg));
         }
+    };
+
+    // Function to load contacts
+    window.loadContacts = function() {
+        // Use only the working endpoint
+        fetch('/admin/api/contacts')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load contacts');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (typeof renderContacts === 'function') {
+                    renderContacts(data.contacts);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading contacts:', error);
+                showMessage('error', 'Failed to load contact messages');
+            });
+    };
+
+    // Function to load contact details
+    window.loadContactDetails = function(contactId) {
+        // Use only the working endpoint
+        fetch(`/admin/api/contacts/${contactId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load contact details');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (typeof renderContactDetails === 'function') {
+                    renderContactDetails(data.contact);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading contact details:', error);
+                showMessage('error', 'Failed to load contact details');
+            });
     };
 });

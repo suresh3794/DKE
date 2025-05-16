@@ -313,6 +313,7 @@
         function loadProducts() {
             console.log('Loading products...');
             
+            // Use only the endpoint that works
             fetch('/api/products-list')
                 .then(response => {
                     console.log('Products response:', response.status);

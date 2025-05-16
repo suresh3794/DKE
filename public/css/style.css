@@ -75,14 +75,21 @@ nav {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.logo {
+.logo a {
     display: flex;
     align-items: center;
+    text-decoration: none; /* Remove underline from link */
+    color: inherit; /* Inherit text color */
 }
 
 .logo img {
     height: 60px;
     margin-right: 15px;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover img {
+    transform: scale(1.05); /* Slight zoom effect on hover */
 }
 
 .logo-text {
@@ -604,4 +611,118 @@ footer {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Message container styles - modern design */
+.message-container {
+    margin-bottom: 25px;
+}
+
+.message {
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideDown 0.3s ease-out forwards;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.message::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 4px;
+}
+
+.success-message {
+    background-color: #f0fff4;
+    color: #38a169;
+    border: 1px solid rgba(56, 161, 105, 0.2);
+}
+
+.success-message::before {
+    background-color: #38a169;
+}
+
+.error-message {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid rgba(229, 62, 62, 0.2);
+}
+
+.error-message::before {
+    background-color: #e53e3e;
+}
+
+.warning-message {
+    background-color: #fffbea;
+    color: #d69e2e;
+    border: 1px solid rgba(214, 158, 46, 0.2);
+}
+
+.warning-message::before {
+    background-color: #d69e2e;
+}
+
+.info-message {
+    background-color: #ebf8ff;
+    color: #3182ce;
+    border: 1px solid rgba(49, 130, 206, 0.2);
+}
+
+.info-message::before {
+    background-color: #3182ce;
+}
+
+.message i {
+    font-size: 18px;
+}
+
+.message-content {
+    flex: 1;
+}
+
+.message-close {
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    transition: opacity 0.2s;
+}
+
+.message-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.message.fade-out {
+    animation: fadeOut 0.5s forwards;
 }

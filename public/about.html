@@ -60,23 +60,23 @@
             <h2 class="section-title">Our Team</h2>
             <div class="team-grid">
                 <div class="team-member">
-                    <img src="/images/team/member1.jpg" alt="Team Member">
+                    <img src="https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg" alt="Team Member">
                     <h3>Saravanan R</h3>
                     <p>Founder & CEO</p>
                 </div>
                 <div class="team-member">
-                    <img src="/images/team/member2.jpg" alt="Team Member">
-                    <h3>xxx</h3>
+                    <img src="https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg" alt="Team Member">
+                    <h3>Rajesh Kumar</h3>
                     <p>Operations Manager</p>
                 </div>
                 <div class="team-member">
-                    <img src="/images/team/member3.jpg" alt="Team Member">
-                    <h3>xxx</h3>
+                    <img src="https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg" alt="Team Member">
+                    <h3>Venkatesh S</h3>
                     <p>Technical Director</p>
                 </div>
                 <div class="team-member">
-                    <img src="/images/team/member4.jpg" alt="Team Member">
-                    <h3>xxx</h3>
+                    <img src="https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg" alt="Team Member">
+                    <h3>Priya Lakshmi</h3>
                     <p>Customer Relations</p>
                 </div>
             </div>
@@ -103,6 +103,9 @@
             
             // Fetch site settings and render content
             fetchSettings();
+            
+            // Set default image for team members
+            setupTeamMemberImages();
         });
 
         // Function to load header and footer components
@@ -172,6 +175,27 @@
                     // Set default about text if fetch fails
                     document.getElementById('about-text-content').textContent = 'Dignity Kitchen Equipments is a leading provider of high-quality kitchen equipment for commercial and industrial use. With years of experience in the industry, we have established ourselves as a trusted partner for restaurants, hotels, and food service businesses.';
                 });
+        }
+        
+        // Function to set up team member images with default Cloudinary image
+        function setupTeamMemberImages() {
+            // Default Cloudinary image URL
+            const defaultImageUrl = "https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg";
+            
+            // Get all team member images
+            const teamMemberImages = document.querySelectorAll('.team-member img');
+            
+            // Set onerror handler for each image
+            teamMemberImages.forEach(img => {
+                img.onerror = function() {
+                    this.src = defaultImageUrl;
+                };
+                
+                // Check if the image is the default local path and replace it
+                if (img.src.includes('/images/team/member')) {
+                    img.src = defaultImageUrl;
+                }
+            });
         }
     </script>
 </body>

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const ContactSchema = new mongoose.Schema({
+const ContactSchema = new Schema({
   name: {
     type: String,
     required: true
@@ -11,7 +12,7 @@ const ContactSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: false
+    default: ''
   },
   subject: {
     type: String,
@@ -25,10 +26,6 @@ const ContactSchema = new mongoose.Schema({
     type: String,
     enum: ['new', 'read', 'replied', 'archived'],
     default: 'new'
-  },
-  product: {
-    type: String,
-    required: false
   }
 }, { timestamps: true });
 

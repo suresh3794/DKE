@@ -28,17 +28,17 @@
                     <div class="contact-card">
                         <i class="fas fa-map-marker-alt"></i>
                         <h3>Our Location</h3>
-                        <p id="contact-address">Loading...</p>
+                        <p id="contact-card-address">Loading...</p>
                     </div>
                     <div class="contact-card">
                         <i class="fas fa-phone"></i>
                         <h3>Phone Number</h3>
-                        <p id="contact-phone">Loading...</p>
+                        <p id="contact-card-phone">Loading...</p>
                     </div>
                     <div class="contact-card">
                         <i class="fas fa-envelope"></i>
                         <h3>Email Address</h3>
-                        <p id="contact-email">Loading...</p>
+                        <p id="contact-card-email">Loading...</p>
                     </div>
                     <div class="contact-card">
                         <i class="fas fa-clock"></i>
@@ -50,7 +50,7 @@
                 
                 <div class="contact-form">
                     <h2>Send Us a Message</h2>
-                    <div id="formStatus">
+                    <div id="message-container">
                         <!-- Form status messages will be displayed here -->
                     </div>
                     <form id="contactForm" action="/contact" method="POST">
@@ -70,12 +70,7 @@
                             <label for="subject">Subject</label>
                             <input type="text" id="subject" name="subject" required>
                         </div>
-                        <div id="product-field" style="display: none;">
-                            <div class="form-group">
-                                <label for="product">Product</label>
-                                <input type="text" id="product" name="product" readonly>
-                            </div>
-                        </div>
+                        <!-- Removed the product field -->
                         <div class="form-group">
                             <label for="message">Your Message</label>
                             <textarea id="message" name="message" rows="5" required></textarea>
@@ -102,8 +97,34 @@
 
     <script src="/js/main.js"></script>
     <script>
+        // Configure logging
+        const VERBOSE_LOGGING = false; // Set to true to enable detailed logging
+        
+        // Custom logger
+        const logger = window.logger || {
+            log: (...args) => {
+                if (VERBOSE_LOGGING) {
+                    console.log(...args);
+                }
+            },
+            // Always log errors and warnings
+            error: (...args) => console.error(...args),
+            warn: (...args) => console.warn(...args)
+        };
+
+        // Make logger available globally
+        window.logger = logger;
+
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Contact page DOM loaded');
+            logger.log('Contact page DOM loaded');
+            
+            // Check for debug parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('debug') === 'true') {
+                // Enable verbose logging if debug parameter is present
+                window.VERBOSE_LOGGING = true;
+                logger.log('Debug mode enabled - verbose logging activated');
+            }
             
             // Load header and footer first
             loadComponent('header', 'header-container', { hideTopBar: true, page: 'contact' });
@@ -111,30 +132,17 @@
             
             // Wait a short time to ensure components are loaded before loading settings
             setTimeout(() => {
-                console.log('About to call loadSettings() after delay');
+                logger.log('About to call loadSettings() after delay');
                 loadSettings();
-                console.log('Called loadSettings()');
+                logger.log('Called loadSettings()');
             }, 500);
             
             // Check for URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const success = urlParams.get('success');
             const error = urlParams.get('error');
-            const product = urlParams.get('product');
             
-            // Display success/error messages if present
-            if (success) {
-                showMessage('success', success);
-            }
-            
+            // Display error message if present
             if (error) {
                 showMessage('error', error);
-            }
-            
-            // Set product if present
-            if (product) {
-                document.getElementById('product-field').style.display = 'block';
-                document.getElementById('product').value = product;
             }
             
             // Form validation
@@ -146,26 +154,37 @@
                     const subject = document.getElementById('subject').value;
                     const message = document.getElementById('message').value;
                     
+                    logger.log('Form submission attempt with:', { name, email, subject });
+                    
                     if (!name || !email || !subject || !message) {
                         e.preventDefault();
+                        logger.warn('Form validation failed - missing required fields');
                         showMessage('error', 'Please fill in all required fields');
                         return false;
                     }
+                    
+                    logger.log('Form validation passed, submitting form');
                 });
             }
         });
 
         // Function to load header and footer components
         function loadComponent(component, targetId, data = {}) {
-            console.log(`Loading component: ${component}`);
+            logger.log(`Loading component: ${component}`);
             fetch(`/components/${component}.html`)
-                .then(response => response.text())
+                .then(response => {
+                    logger.log(`Component ${component} response status:`, response.status);
+                    return response.text();
+                })
                 .then(html => {
                     // Insert the HTML
                     document.getElementById(targetId).innerHTML = html;
+                    logger.log(`Component ${component} HTML inserted`);
                     
                     // Find and execute scripts
                     const scripts = document.getElementById(targetId).getElementsByTagName('script');
+                    logger.log(`Found ${scripts.length} scripts in ${component}`);
+                    
                     for (let i = 0; i < scripts.length; i++) {
                         const script = scripts[i];
                         const scriptClone = document.createElement('script');
@@ -190,118 +209,112 @@
                         // Apply any additional header customizations
                         if (data.hideTopBar) {
                             const topBar = document.querySelector('.top-bar');
-                            if (topBar) topBar.style.display = 'none';
+                            if (topBar) {
+                                topBar.style.display = 'none';
+                                logger.log('Top bar hidden as requested');
+                            }
                         }
                     }
                     
-                    console.log(`Component loaded and scripts executed: ${component}`);
+                    logger.log(`Component loaded and scripts executed: ${component}`);
                 })
-                .catch(error => console.error(`Error loading ${component}:`, error));
+                .catch(error => {
+                    logger.error(`Error loading ${component}:`, error);
+                });
         }
 
         // Function to highlight current page in navigation
         function highlightCurrentPage(page) {
+            logger.log(`Highlighting current page: ${page}`);
             const menuItems = document.querySelectorAll('.menu li a');
             menuItems.forEach(item => {
-                if ((item.getAttribute('href') === '/contact' || item.getAttribute('href') === 'contact.html') && page === 'contact') {
+                const href = item.getAttribute('href');
+                logger.log(`Checking menu item: ${href}`);
+                if ((href === '/contact' || href === 'contact.html') && page === 'contact') {
                     item.parentElement.classList.add('active');
+                    logger.log('Contact menu item highlighted');
                 }
             });
         }
 
         // Function to load settings
         function loadSettings() {
-            console.log('Loading settings for contact page');
-            
-            // Debug: Check if elements exist before fetch
-            console.log('Contact elements before fetch:', {
-                addressElement: document.getElementById('contact-address'),
-                phoneElement: document.getElementById('contact-phone'),
-                emailElement: document.getElementById('contact-email')
-            });
+            logger.log('Loading settings for contact page');
             
             fetch('/api/settings')
                 .then(response => {
-                    console.log('Settings response status:', response.status);
+                    logger.log('Settings response status:', response.status);
                     return response.json();
                 })
                 .then(settings => {
-                    console.log('Contact page settings loaded:', settings);
+                    logger.log('Contact page settings loaded:', settings);
                     
-                    // Get references to elements
-                    const addressElement = document.getElementById('contact-address');
-                    const phoneElement = document.getElementById('contact-phone');
-                    const emailElement = document.getElementById('contact-email');
+                    // Update contact info with the new IDs
+                    document.getElementById('contact-card-address').textContent = settings.contactAddress || '';
+                    document.getElementById('contact-card-phone').textContent = settings.contactPhone || '';
+                    document.getElementById('contact-card-email').textContent = settings.contactEmail || '';
                     
-                    console.log('Contact elements found:', {
-                        addressElement: addressElement,
-                        phoneElement: phoneElement,
-                        emailElement: emailElement
+                    logger.log('Contact info updated:', {
+                        address: settings.contactAddress,
+                        phone: settings.contactPhone,
+                        email: settings.contactEmail
                     });
-                    
-                    // Update contact info with null checks
-                    if (addressElement) {
-                        addressElement.textContent = settings.contactAddress || '';
-                        console.log('Updated address to:', settings.contactAddress);
-                    } else {
-                        console.error('contact-address element not found');
-                    }
-                    
-                    if (phoneElement) {
-                        phoneElement.textContent = settings.contactPhone || '';
-                        console.log('Updated phone to:', settings.contactPhone);
-                    } else {
-                        console.error('contact-phone element not found');
-                    }
-                    
-                    if (emailElement) {
-                        emailElement.textContent = settings.contactEmail || '';
-                        console.log('Updated email to:', settings.contactEmail);
-                    } else {
-                        console.error('contact-email element not found');
-                    }
                     
                     // Update page title
                     document.title = `Contact Us - ${settings.siteName}`;
+                    logger.log('Page title updated:', document.title);
                 })
                 .catch(error => {
-                    console.error('Error loading settings:', error);
+                    logger.error('Error loading settings:', error);
                     // Set default values if settings can't be loaded
-                    const addressElement = document.getElementById('contact-address');
-                    const phoneElement = document.getElementById('contact-phone');
-                    const emailElement = document.getElementById('contact-email');
-                    
-                    if (addressElement) addressElement.textContent = '123 Main Street, City, Country';
-                    if (phoneElement) phoneElement.textContent = '+1 (555) 123-4567';
-                    if (emailElement) emailElement.textContent = 'contact@dignitykitchen.com';
+                    document.getElementById('contact-card-address').textContent = '123 Main Street, City, Country';
+                    document.getElementById('contact-card-phone').textContent = '+1 (555) 123-4567';
+                    document.getElementById('contact-card-email').textContent = 'contact@dignitykitchen.com';
+                    logger.log('Default contact info set due to error');
                 });
         }
 
         // Function to show success/error messages
         function showMessage(type, message) {
+            logger.log(`Showing ${type} message: ${message}`);
             const messageContainer = document.getElementById('message-container');
-            const formStatus = document.getElementById('formStatus');
             
             const messageHTML = `
-                <div class="${type}-message">
-                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> ${message}
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <div class="message-content">${message}</div>
+                    <button type="button" class="message-close" onclick="this.parentElement.classList.add('fade-out'); setTimeout(() => this.parentElement.remove(), 500);">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             `;
             
             messageContainer.innerHTML = messageHTML;
-            formStatus.innerHTML = messageHTML;
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const messageElement = messageContainer.querySelector('.message');
+                if (messageElement) {
+                    messageElement.classList.add('fade-out');
+                    setTimeout(() => {
+                        if (messageContainer.contains(messageElement)) {
+                            messageContainer.removeChild(messageElement);
+                        }
+                    }, 500);
+                }
+            }, 5000);
         }
         
         // Debug script to find what's causing the JSON parsing error
-        console.log('Contact page loaded');
+        logger.log('Contact page loaded');
         
         // Monitor all fetch requests
         const originalFetch = window.fetch;
         window.fetch = function() {
-            console.log('Fetch called with:', arguments);
+            logger.log('Fetch called with:', arguments);
             return originalFetch.apply(this, arguments)
                 .catch(error => {
-                    console.error('Fetch error details:', {
+                    logger.error('Fetch error details:', {
                         url: arguments[0],
                         options: arguments[1],
                         error: error
@@ -313,14 +326,14 @@
         // Monitor all XMLHttpRequest
         const originalXHROpen = XMLHttpRequest.prototype.open;
         XMLHttpRequest.prototype.open = function() {
-            console.log('XMLHttpRequest opened with:', arguments);
+            logger.log('XMLHttpRequest opened with:', arguments);
             return originalXHROpen.apply(this, arguments);
         };
         
         // Log all script tags on the page
-        console.log('Scripts on this page:');
+        logger.log('Scripts on this page:');
         document.querySelectorAll('script').forEach((script, index) => {
-            console.log(`Script ${index}:`, {
+            logger.log(`Script ${index}:`, {
                 src: script.src,
                 content: script.src ? '(external)' : script.innerHTML.substring(0, 100) + '...'
             });

@@ -9,12 +9,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Log Cloudinary configuration status (without revealing secrets)
-console.log("Cloudinary configuration status:", {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? "✓ Set" : "✗ Missing",
-  api_key: process.env.CLOUDINARY_API_KEY ? "✓ Set" : "✗ Missing",
-  api_secret: process.env.CLOUDINARY_API_SECRET ? "✓ Set" : "✗ Missing"
-});
+// Replace the verbose logging with a more concise version
+console.log("Cloudinary configuration:", 
+  Object.entries({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  }).reduce((status, [key, value]) => {
+    status[key] = value ? "✓" : "✗";
+    return status;
+  }, {})
+);
 
 // Create storage engines for different upload types
 const galleryStorage = new CloudinaryStorage({
@@ -68,11 +73,17 @@ const deleteImage = async (publicId) => {
   }
 };
 
+// Function to get default user image URL
+const getDefaultUserImage = () => {
+  return "https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg";
+};
+
 module.exports = {
   cloudinary,
   galleryUpload,
   productUpload,
   testimonialUpload,
   heroSlideUpload,
-  deleteImage
+  deleteImage,
+  getDefaultUserImage
 };

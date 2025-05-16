@@ -358,15 +358,11 @@
         
         // Function to load testimonial data for editing
         function loadTestimonialData(testimonialId) {
-            // Try multiple endpoints in sequence
-            fetch(`/api/admin/testimonials/${testimonialId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        // If first endpoint fails, try the second one
-                        return fetch(`/admin/api/testimonials/${testimonialId}`);
-                    }
-                    return response;
-                })
+            // Default Cloudinary image URL
+            const defaultImageUrl = "https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg";
+            
+            // Use only the working endpoint
+            fetch(`/api/testimonials/${testimonialId}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to load testimonial');
@@ -399,7 +395,7 @@
                         const preview = document.createElement('div');
                         preview.className = 'image-preview';
                         preview.innerHTML = `
-                            <img src="${testimonial.imageUrl}" alt="${testimonial.name}">
+                            <img src="${testimonial.imageUrl}" alt="${testimonial.name}" onerror="this.src='${defaultImageUrl}'">
                             <small class="form-text">Current photo. Upload a new one to replace it.</small>
                         `;
                         previewContainer.appendChild(preview);

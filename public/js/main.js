@@ -1,6 +1,3 @@
-// Add this at the top of your main.js file
-console.log('main.js loaded');
-
 // If there's any form handling code in main.js, add this condition
 document.addEventListener('DOMContentLoaded', function() {
   // Skip automatic form handling for contact form

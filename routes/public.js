@@ -91,10 +91,17 @@ router.post('/contact', async (req, res) => {
   try {
     const { name, email, phone, subject, message, product } = req.body;
     
+    // Log the received data for debugging
+    console.log('Contact form submission received:', { name, email, phone, subject, message, product });
+    
     // Validate required fields
     if (!name || !email || !subject || !message) {
+      console.log('Missing required fields in contact form submission');
       return res.redirect('/contact?error=Please fill in all required fields');
     }
+    
+    // Make sure the Contact model is properly loaded
+    const Contact = mongoose.model('Contact');
     
     const newContact = new Contact({
       name,
@@ -106,7 +113,9 @@ router.post('/contact', async (req, res) => {
       status: 'new'
     });
     
+    console.log('Attempting to save contact:', newContact);
     await newContact.save();
+    console.log('Contact saved successfully');
     
     // Redirect to success page
     res.redirect('/contact/success');

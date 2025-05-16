@@ -61,7 +61,24 @@
     
     <!-- Inline JavaScript for index page -->
     <script>
+        // Configure logging - this will be overridden by main.js if it loads first
+        const VERBOSE_LOGGING = false; // Set to true to enable detailed logging
+        
+        // Custom logger
+        const logger = window.logger || {
+            log: (...args) => {
+                if (VERBOSE_LOGGING) {
+                    console.log(...args);
+                }
+            },
+            // Always log errors and warnings
+            error: (...args) => console.error(...args),
+            warn: (...args) => console.warn(...args)
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
+            logger.log('Index page DOM loaded');
+            
             // Load header and footer
             loadComponent('header', 'header-container', { page: 'home' });
             loadComponent('footer', 'footer-container');
@@ -78,7 +95,7 @@
 
         // Function to load header and footer components
         function loadComponent(component, targetId, data = {}) {
-            console.log(`Loading component: ${component}`);
+            logger.log(`Loading component: ${component}`);
             fetch(`/components/${component}.html`)
                 .then(response => response.text())
                 .then(html => {
@@ -109,9 +126,9 @@
                         highlightCurrentPage(data.page);
                     }
                     
-                    console.log(`Component loaded and scripts executed: ${component}`);
+                    logger.log(`Component loaded and scripts executed: ${component}`);
                 })
-                .catch(error => console.error(`Error loading ${component}:`, error));
+                .catch(error => logger.error(`Error loading ${component}:`, error));
         }
 
         // Function to highlight current page in navigation
@@ -139,7 +156,7 @@
                     // Create hero slides
                     createHeroSlides(settings);
                 })
-                .catch(error => console.error('Error fetching settings:', error));
+                .catch(error => logger.error('Error fetching settings:', error));
         }
 
         // Function to create hero slides
@@ -232,7 +249,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching featured products:', error);
+                    logger.error('Error fetching featured products:', error);
                     // Add fallback products on error
                     addFallbackProducts(document.getElementById('featured-products-container'));
                 });
@@ -332,7 +349,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching testimonials:', error);
+                    logger.error('Error fetching testimonials:', error);
                     // Add fallback testimonial on error
                     const fallbackTestimonial = {
                         content: 'Dignity Kitchen Equipments provided us with top-quality appliances that have significantly improved our kitchen efficiency.',
@@ -348,23 +365,26 @@
 
         // Function to create a testimonial card
         function createTestimonialCard(testimonial) {
-            const card = document.createElement('div');
-            card.className = 'testimonial';
+            // Default Cloudinary image URL
+            const defaultImageUrl = "https://res.cloudinary.com/dsdqwqupu/image/upload/v1747397756/307ce493-b254-4b2d-8ba4-d12c080d6651_npbwez.jpg";
             
-            // Testimonial content
+            const card = document.createElement('div');
+            card.className = 'testimonial-card';
+            
+            // Create content div
             const contentDiv = document.createElement('div');
             contentDiv.className = 'testimonial-content';
             
             const quote = document.createElement('p');
-            quote.textContent = `"${testimonial.content}"`;
+            quote.innerHTML = `<i class="fas fa-quote-left"></i> ${testimonial.content} <i class="fas fa-quote-right"></i>`;
             
             const ratingDiv = document.createElement('div');
             ratingDiv.className = 'rating';
             
-            // Add star ratings
-            for (let i = 0; i < 5; i++) {
+            // Add stars based on rating
+            for (let i = 1; i <= 5; i++) {
                 const star = document.createElement('i');
-                star.className = i < testimonial.rating ? 'fas fa-star' : 'far fa-star';
+                star.className = i <= testimonial.rating ? 'fas fa-star' : 'far fa-star';
                 ratingDiv.appendChild(star);
             }
             
@@ -376,8 +396,9 @@
             clientDiv.className = 'client';
             
             const clientImg = document.createElement('img');
-            clientImg.src = testimonial.imageUrl || '/images/default-avatar.png';
+            clientImg.src = testimonial.imageUrl || defaultImageUrl;
             clientImg.alt = testimonial.name;
+            clientImg.onerror = function() { this.src = defaultImageUrl; };
             
             const clientInfo = document.createElement('div');
             
@@ -396,7 +417,6 @@
             clientDiv.appendChild(clientImg);
             clientDiv.appendChild(clientInfo);
             
-            // Assemble the card
             card.appendChild(contentDiv);
             card.appendChild(clientDiv);
             

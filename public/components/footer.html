@@ -34,15 +34,26 @@
 </footer>
 
 <script>
-    console.log('Footer script running');
+    // Use parent page's logger if available, or create a fallback
+    const footerLogger = window.logger || {
+        log: (...args) => {
+            if (window.VERBOSE_LOGGING) {
+                console.log(...args);
+            }
+        },
+        error: (...args) => console.error(...args),
+        warn: (...args) => console.warn(...args)
+    };
+
+    footerLogger.log('Footer script running');
     // Fetch settings to populate footer data
     fetch('/api/settings')
         .then(response => {
-            console.log('Footer settings response status:', response.status);
+            footerLogger.log('Footer settings response status:', response.status);
             return response.json();
         })
         .then(settings => {
-            console.log('Footer settings loaded:', settings);
+            footerLogger.log('Footer settings loaded:', settings);
             
             // Update footer logo and tagline
             document.querySelector('.footer-logo img').alt = settings.siteName + ' Logo';
@@ -52,7 +63,7 @@
             document.getElementById('footer-address').textContent = settings.contactAddress || '';
             document.getElementById('footer-phone').textContent = settings.contactPhone || '';
             document.getElementById('footer-email').textContent = settings.contactEmail || '';
-            console.log('Footer contact info updated:', {
+            footerLogger.log('Footer contact info updated:', {
                 address: settings.contactAddress,
                 phone: settings.contactPhone,
                 email: settings.contactEmail
@@ -66,5 +77,5 @@
             document.getElementById('footer-instagram').href = settings.socialInstagram || '#';
             document.getElementById('footer-twitter').href = settings.socialTwitter || '#';
         })
-        .catch(error => console.error('Error loading footer data:', error));
+        .catch(error => footerLogger.error('Error loading footer data:', error));
 </script>

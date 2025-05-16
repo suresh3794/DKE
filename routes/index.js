@@ -46,5 +46,50 @@ router.get('/contact', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/contact.html'));
 });
 
+// Contact form submission
+router.post('/contact', async (req, res) => {
+  try {
+    const { name, email, phone, subject, message } = req.body;
+    
+    // Use appLogger instead of console.log
+    const appLogger = req.app.locals.appLogger || console;
+    appLogger.log('Contact form submission received:', { name, email, phone, subject, message });
+    
+    // Validate required fields
+    if (!name || !email || !subject || !message) {
+      appLogger.log('Missing required fields in contact form submission');
+      return res.redirect('/contact?error=Please fill in all required fields');
+    }
+    
+    // Make sure the Contact model is properly loaded
+    const Contact = mongoose.model('Contact');
+    
+    const newContact = new Contact({
+      name,
+      email,
+      phone: phone || '',
+      subject,
+      message,
+      status: 'new'
+    });
+    
+    appLogger.log('Attempting to save contact:', newContact);
+    await newContact.save();
+    appLogger.log('Contact saved successfully');
+    
+    // Redirect to success page
+    res.redirect('/contact/success');
+  } catch (err) {
+    const appLogger = req.app.locals.appLogger || console;
+    appLogger.error('Contact form error:', err);
+    res.redirect('/contact?error=Failed to send your message. Please try again.');
+  }
+});
+
+// Contact success page
+router.get('/contact/success', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/contact-success.html'));
+});
+
 // Export the router
 module.exports = router;

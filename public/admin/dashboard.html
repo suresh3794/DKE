@@ -6,6 +6,7 @@
     <title>Admin Dashboard - Dignity Kitchen</title>
     <link rel="stylesheet" href="/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/messages.js"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -27,13 +28,158 @@
             </nav>
         </aside>
         
-        <main class="main-content">
+        <main class="content">
             <div class="page-header">
                 <h1>Dashboard</h1>
-                <p>Welcome to your admin dashboard</p>
+                <div class="header-actions">
+                    <p>Welcome to your admin dashboard</p>
+                    <button onclick="loadDashboardData()" class="refresh-btn" title="Refresh Dashboard Data">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
+
+            <style>
+                /* Main layout styles */
+                .content {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100vh;
+                    overflow: hidden;
+                }
+                
+                .page-header {
+                    flex-shrink: 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                .dashboard-stats {
+                    flex-shrink: 0;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                
+                .recent-activity {
+                    flex-grow: 1;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+                
+                .recent-activity h2 {
+                    flex-shrink: 0;
+                    margin-bottom: 15px;
+                }
+                
+                .activity-list {
+                    flex-grow: 1;
+                    overflow-y: auto;
+                    padding-right: 10px;
+                    border-radius: 8px;
+                    background-color: white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                }
+                
+                /* Activity item styles */
+                .activity-item {
+                    padding: 15px;
+                    border-left: 3px solid #4CAF50;
+                    margin-bottom: 15px;
+                    background-color: white;
+                    border-radius: 4px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                }
+                
+                .activity-time {
+                    display: block;
+                    font-size: 12px;
+                    color: #777;
+                    margin-bottom: 5px;
+                }
+                
+                .activity-item p {
+                    margin: 0;
+                    color: #333;
+                }
+                
+                /* Other styles remain the same */
+                .header-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                
+                .refresh-btn {
+                    background: none;
+                    border: none;
+                    color: #4CAF50;
+                    cursor: pointer;
+                    font-size: 16px;
+                    padding: 5px;
+                    border-radius: 50%;
+                    transition: all 0.3s ease;
+                }
+                
+                .refresh-btn:hover {
+                    background-color: rgba(76, 175, 80, 0.1);
+                    transform: rotate(180deg);
+                }
+                
+                /* Responsive adjustments */
+                @media (max-width: 992px) {
+                    .main-content {
+                        margin-left: 70px; /* Match the collapsed sidebar width */
+                    }
+                }
+                
+                @media (max-width: 768px) {
+                    .main-content {
+                        margin-left: 0;
+                        padding: 15px;
+                    }
+                    
+                    .dashboard-stats {
+                        grid-template-columns: 1fr;
+                    }
+                }
+                
+                .loading-spinner {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    color: #777;
+                }
+                
+                .loading-spinner i {
+                    margin-right: 10px;
+                    color: var(--primary-color);
+                }
+                
+                .empty-state {
+                    padding: 20px;
+                    text-align: center;
+                    color: #777;
+                }
+                
+                .error-message {
+                    padding: 15px;
+                    background-color: #fff3f3;
+                    border-left: 3px solid #ff5252;
+                    color: #d32f2f;
+                    margin-bottom: 20px;
+                    border-radius: 4px;
+                }
+            </style>
             
-            <div id="error-container"></div>
+            <div id="message-container"></div>
             
             <div class="dashboard-stats">
                 <div class="stat-card">
@@ -79,19 +225,10 @@
             
             <div class="recent-activity">
                 <h2>Recent Activity</h2>
-                <div class="activity-list">
-                    <!-- Activity items will be loaded dynamically -->
-                    <div class="activity-item">
-                        <span class="activity-time">Today, 10:30 AM</span>
-                        <p>New gallery image uploaded: "Commercial Kitchen Installation"</p>
-                    </div>
-                    <div class="activity-item">
-                        <span class="activity-time">Yesterday, 3:45 PM</span>
-                        <p>New contact form submission from John Smith</p>
-                    </div>
-                    <div class="activity-item">
-                        <span class="activity-time">Yesterday, 11:20 AM</span>
-                        <p>Product updated: "Industrial Refrigeration Unit"</p>
+                <div class="activity-list" id="activity-list">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading recent activity...</span>
                     </div>
                 </div>
             </div>
@@ -106,25 +243,158 @@
             
             // Load dashboard data
             loadDashboardData();
+            
+            // Load recent activity
+            loadRecentActivity();
+            
+            // Setup mobile menu toggle
+            setupMobileMenu();
         });
+        
+        // Function to load recent activity
+        function loadRecentActivity() {
+            fetch('/api/recent-activity')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load recent activity');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Recent activity loaded:', data);
+                    
+                    // Update activity list
+                    renderActivityList(data.activities);
+                })
+                .catch(error => {
+                    console.error('Error loading recent activity:', error);
+                    document.getElementById('activity-list').innerHTML = `
+                        <div class="error-message">
+                            Error loading recent activity. Please try refreshing the page.
+                        </div>
+                    `;
+                });
+        }
+        
+        // Function to render activity list
+        function renderActivityList(activities) {
+            const activityList = document.getElementById('activity-list');
+            
+            // Clear loading spinner
+            activityList.innerHTML = '';
+            
+            // Check if there are any activities
+            if (!activities || activities.length === 0) {
+                activityList.innerHTML = `
+                    <div class="empty-state">
+                        <p>No recent activity to display.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Format and display each activity
+            activities.forEach(activity => {
+                try {
+                    // Format the time
+                    const activityTime = formatActivityTime(activity.time);
+                    
+                    // Create activity message based on type and action
+                    let activityMessage = '';
+                    
+                    switch (activity.type) {
+                        case 'product':
+                            activityMessage = `Product ${activity.action}: "${activity.item}"`;
+                            break;
+                        case 'gallery':
+                            activityMessage = `New gallery image ${activity.action}: "${activity.item}"`;
+                            break;
+                        case 'contact':
+                            activityMessage = `New contact form submission from ${activity.item}`;
+                            break;
+                        default:
+                            activityMessage = `${activity.action} ${activity.type}: ${activity.item}`;
+                    }
+                    
+                    // Create activity item element
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'activity-item';
+                    activityItem.innerHTML = `
+                        <span class="activity-time">${activityTime}</span>
+                        <p>${activityMessage}</p>
+                    `;
+                    
+                    // Add to activity list
+                    activityList.appendChild(activityItem);
+                } catch (error) {
+                    console.error('Error rendering activity:', error, activity);
+                }
+            });
+        }
+        
+        // Function to format activity time
+        function formatActivityTime(timestamp) {
+            try {
+                const activityDate = new Date(timestamp);
+                if (isNaN(activityDate.getTime())) {
+                    return 'Recently';
+                }
+                
+                const now = new Date();
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                // Format time part (e.g., "10:30 AM")
+                const timeOptions = { hour: 'numeric', minute: 'numeric', hour12: true };
+                const timeString = activityDate.toLocaleTimeString(undefined, timeOptions);
+                
+                // Check if activity happened today
+                if (activityDate.toDateString() === now.toDateString()) {
+                    return `Today, ${timeString}`;
+                }
+                
+                // Check if activity happened yesterday
+                if (activityDate.toDateString() === yesterday.toDateString()) {
+                    return `Yesterday, ${timeString}`;
+                }
+                
+                // Otherwise, show the full date
+                const dateOptions = { month: 'short', day: 'numeric' };
+                const dateString = activityDate.toLocaleDateString(undefined, dateOptions);
+                return `${dateString}, ${timeString}`;
+            } catch (error) {
+                console.error('Error formatting time:', error, timestamp);
+                return 'Recently';
+            }
+        }
         
         // Function to check if user is authenticated
         function checkAuth() {
             fetch('/admin/check-auth')
                 .then(response => {
                     if (!response.ok) {
+                        throw new Error('Not authenticated');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.authenticated) {
                         window.location.href = '/admin/login';
                     }
                 })
                 .catch(error => {
-                    console.error('Auth check failed:', error);
-                    window.location.href = '/admin/login';
+                    console.error('Auth check error:', error);
+                    showMessage('error', 'Authentication failed. Please log in again.');
+                    setTimeout(() => {
+                        window.location.href = '/admin/login';
+                    }, 2000);
                 });
         }
         
         // Function to load dashboard data
         function loadDashboardData() {
-            fetch('/api/admin/dashboard')
+            // Use the direct endpoint
+            fetch('/dashboard-stats')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to load dashboard data');
@@ -132,13 +402,13 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Update dashboard stats
-                    document.getElementById('productCount').textContent = data.productCount;
-                    document.getElementById('galleryCount').textContent = data.galleryCount;
-                    document.getElementById('testimonialCount').textContent = data.testimonialCount;
-                    document.getElementById('newMessageCount').textContent = data.newMessageCount;
+                    console.log('Dashboard data loaded:', data);
                     
-                    // You could also update recent activity here if you have that data
+                    // Update dashboard stats
+                    document.getElementById('productCount').textContent = data.productCount || 0;
+                    document.getElementById('galleryCount').textContent = data.galleryCount || 0;
+                    document.getElementById('testimonialCount').textContent = data.testimonialCount || 0;
+                    document.getElementById('newMessageCount').textContent = data.newMessageCount || 0;
                 })
                 .catch(error => {
                     console.error('Error loading dashboard data:', error);
@@ -147,13 +417,48 @@
                             Error loading dashboard data. Please try refreshing the page.
                         </div>
                     `;
-                    
-                    // Set default values
-                    document.getElementById('productCount').textContent = '0';
-                    document.getElementById('galleryCount').textContent = '0';
-                    document.getElementById('testimonialCount').textContent = '0';
-                    document.getElementById('newMessageCount').textContent = '0';
                 });
+        }
+        
+        // Function to setup mobile menu toggle
+        function setupMobileMenu() {
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            // Check if elements exist before adding event listeners
+            if (!mobileToggle || !sidebar) {
+                console.log('Mobile menu elements not found, skipping setup');
+                return;
+            }
+            
+            // Only show the toggle button on small screens
+            if (window.innerWidth <= 768) {
+                mobileToggle.style.display = 'block';
+            }
+            
+            // Toggle sidebar when button is clicked
+            mobileToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+            
+            // Hide sidebar when clicking outside of it on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768 && 
+                    !sidebar.contains(event.target) && 
+                    event.target !== mobileToggle) {
+                    sidebar.classList.remove('active');
+                }
+            });
+            
+            // Update toggle visibility on window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth <= 768) {
+                    mobileToggle.style.display = 'block';
+                } else {
+                    mobileToggle.style.display = 'none';
+                    sidebar.classList.remove('active');
+                }
+            });
         }
     </script>
 </body>

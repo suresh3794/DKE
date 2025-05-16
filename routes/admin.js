@@ -12,8 +12,7 @@ const User = mongoose.model('User');
 const Contact = mongoose.model('Contact');
 
 // Add this at the top of your file, after requiring mongoose
-console.log('Product model:', typeof Product);
-console.log('Product schema:', Product.schema ? 'defined' : 'undefined');
+const appLogger = console; // Will be overridden by app.locals.appLogger if available
 
 // Import Cloudinary configuration
 const { 
@@ -38,12 +37,21 @@ router.get('/', isAuthenticated, (req, res) => {
 });
 
 // API endpoint for dashboard data
-router.get('/api/admin/dashboard', isAuthenticated, async (req, res) => {
+router.get('/api/dashboard', isAuthenticated, async (req, res) => {
   try {
+    console.log('Dashboard API endpoint called');
+    
     const productCount = await Product.countDocuments();
     const galleryCount = await Gallery.countDocuments();
     const testimonialCount = await Testimonial.countDocuments();
     const newMessageCount = await Contact.countDocuments({ status: 'new' });
+    
+    console.log('Dashboard counts:', {
+      productCount,
+      galleryCount,
+      testimonialCount,
+      newMessageCount
+    });
     
     res.json({
       productCount,
@@ -52,7 +60,7 @@ router.get('/api/admin/dashboard', isAuthenticated, async (req, res) => {
       newMessageCount
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error in dashboard API:', err);
     res.status(500).json({ 
       error: 'Error loading dashboard data',
       productCount: 0,
@@ -531,9 +539,11 @@ router.post('/testimonials/delete/:id', isAuthenticated, async (req, res) => {
 // Contact messages management
 router.get('/contacts', isAuthenticated, async (req, res) => {
   try {
+    const logger = req.app.locals.appLogger || appLogger;
     // We'll still fetch contacts to check if there's an error,
     // but we won't pass them to the template anymore
     await Contact.find();
+    logger.log('Contacts fetched successfully');
     
     // Send the HTML file with query parameters for messages
     const url = new URL('/admin/contacts.html', 'http://localhost');

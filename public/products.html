@@ -119,19 +119,10 @@
         function fetchProducts() {
             console.log('fetchProducts function called');
             
-            // Try multiple endpoints in sequence
-            fetch('/api/products')
+            // Remove the failing endpoint and only use the working one
+            fetch('/api/products-list')
                 .then(response => {
-                    console.log('First endpoint response:', response.status);
-                    if (!response.ok) {
-                        // If first endpoint fails, try the second one
-                        console.log('First endpoint failed, trying second endpoint');
-                        return fetch('/api/products-list');
-                    }
-                    return response;
-                })
-                .then(response => {
-                    console.log('Final endpoint response:', response.status);
+                    console.log('Endpoint response:', response.status);
                     if (!response.ok) {
                         throw new Error('Failed to load products');
                     }

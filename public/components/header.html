@@ -12,11 +12,13 @@
     </div>
     <nav>
         <div class="logo">
-            <img src="/images/logo.png" alt="Logo">
-            <div class="logo-text">
-                <h1 id="header-site-name"></h1>
-                <p id="header-site-tagline"></p>
-            </div>
+            <a href="/" title="Home">
+                <img src="/images/logo.png" alt="Logo">
+                <div class="logo-text">
+                    <h1 id="header-site-name"></h1>
+                    <p id="header-site-tagline"></p>
+                </div>
+            </a>
         </div>
         <ul class="menu">
             <li><a href="/">Home</a></li>
@@ -32,20 +34,31 @@
 </header>
 
 <script>
-    console.log('Header script running');
+    // Use parent page's logger if available, or create a fallback
+    const headerLogger = window.logger || {
+        log: (...args) => {
+            if (window.VERBOSE_LOGGING) {
+                console.log(...args);
+            }
+        },
+        error: (...args) => console.error(...args),
+        warn: (...args) => console.warn(...args)
+    };
+
+    headerLogger.log('Header script running');
     // Fetch settings to populate header data
     fetch('/api/settings')
         .then(response => {
-            console.log('Header settings response status:', response.status);
+            headerLogger.log('Header settings response status:', response.status);
             return response.json();
         })
         .then(settings => {
-            console.log('Header settings loaded:', settings);
+            headerLogger.log('Header settings loaded:', settings);
             
             // Update contact info
             document.getElementById('contact-phone').textContent = settings.contactPhone || '';
             document.getElementById('contact-email').textContent = settings.contactEmail || '';
-            console.log('Contact info updated:', {
+            headerLogger.log('Contact info updated:', {
                 phone: settings.contactPhone,
                 email: settings.contactEmail
             });
@@ -62,5 +75,5 @@
             // Update logo alt text
             document.querySelector('.logo img').alt = settings.siteName + ' Logo';
         })
-        .catch(error => console.error('Error loading header data:', error));
+        .catch(error => headerLogger.error('Error loading header data:', error));
 </script>
