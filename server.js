@@ -116,6 +116,12 @@ require('./models/Testimonial');
 require('./models/Contact');
 require('./models/Setting');
 
+// Add this near your other routes
+app.get('/', (req, res) => {
+  // Redirect root URL to login page
+  res.redirect('/index.html');
+});
+
 // Function to set up routes and middleware
 function setupRoutes() {
   // NOW add the regular middleware
