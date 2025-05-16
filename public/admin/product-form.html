@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= product ? 'Edit' : 'Add' %> Product - Dignity Kitchen</title>
+    <title>Product - Dignity Kitchen</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -196,44 +196,40 @@
         
         <main class="content">
             <header class="admin-header">
-                <h1><%= product && product._id ? 'Edit' : 'Add New' %> Product</h1>
+                <h1 id="page-title">Product</h1>
                 <div class="user-info">
                     <span>Welcome, Admin</span>
                 </div>
             </header>
             
+            <div id="error-container" style="display: none;" class="error-message"></div>
+            
             <div class="form-container">
-                <% if (typeof error !== 'undefined' && error) { %>
-                    <div class="error-message">
-                        <%= error %>
-                    </div>
-                <% } %>
-                
-                <form action="<%= product && product._id ? `/admin/products/edit/${product._id}` : '/admin/products/add' %>" method="POST" enctype="multipart/form-data">
+                <form id="product-form" action="" method="POST" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="name">Product Name</label>
-                        <input type="text" id="name" name="name" class="form-control" value="<%= product && product.name ? product.name : '' %>" required>
+                        <input type="text" id="name" name="name" class="form-control" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="description">Description</label>
-                        <textarea id="description" name="description" class="form-control" rows="4" required><%= product && product.description ? product.description : '' %></textarea>
+                        <textarea id="description" name="description" class="form-control" rows="4" required></textarea>
                     </div>
                     
                     <div class="form-group">
                         <label for="category">Category</label>
                         <select id="category" name="category" class="form-control" required>
                             <option value="">Select a category</option>
-                            <option value="cooking" <%= product && product.category === 'cooking' ? 'selected' : '' %>>Cooking Equipment</option>
-                            <option value="refrigeration" <%= product && product.category === 'refrigeration' ? 'selected' : '' %>>Refrigeration</option>
-                            <option value="preparation" <%= product && product.category === 'preparation' ? 'selected' : '' %>>Food Preparation</option>
-                            <option value="storage" <%= product && product.category === 'storage' ? 'selected' : '' %>>Storage Solutions</option>
+                            <option value="cooking">Cooking Equipment</option>
+                            <option value="refrigeration">Refrigeration</option>
+                            <option value="preparation">Food Preparation</option>
+                            <option value="storage">Storage Solutions</option>
                         </select>
                     </div>
 
                     <div class="form-group checkbox-group">
                         <label class="checkbox-container">
-                            <input type="checkbox" id="featured" name="featured" <%= product && product.featured ? 'checked' : '' %>>
+                            <input type="checkbox" id="featured" name="featured">
                             <span class="checkmark"></span>
                             Feature this product on homepage
                         </label>
@@ -241,21 +237,15 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="image">
-                            <%= product && product._id ? 'Product Image (leave empty to keep current image)' : 'Product Image' %>
-                        </label>
-                        <input type="file" id="image" name="image" class="form-control" <%= product && product._id ? '' : 'required' %> accept="image/*">
+                        <label for="image" id="image-label">Product Image</label>
+                        <input type="file" id="image" name="image" class="form-control" required accept="image/*">
                         
-                        <% if (product && product.imageUrl) { %>
-                            <div class="image-preview">
-                                <img src="<%= product.imageUrl %>" alt="<%= product.name %>">
-                            </div>
-                        <% } %>
+                        <div id="image-preview-container"></div>
                     </div>
                     
                     <div class="btn-container">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> <%= product && product._id ? 'Update' : 'Save' %> Product
+                            <i class="fas fa-save"></i> <span id="submit-text">Save</span> Product
                         </button>
                         <a href="/admin/products" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Cancel
@@ -268,25 +258,123 @@
 
     <script src="/js/admin.js"></script>
     <script>
-        // Preview image before upload
-        document.getElementById('image').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    let preview = document.querySelector('.image-preview');
-                    if (!preview) {
-                        preview = document.createElement('div');
-                        preview.className = 'image-preview';
-                        const img = document.createElement('img');
-                        preview.appendChild(img);
-                        e.target.parentNode.appendChild(preview);
-                    }
-                    preview.querySelector('img').src = event.target.result;
-                }
-                reader.readAsDataURL(file);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Get product ID from URL if it exists
+            const pathParts = window.location.pathname.split('/');
+            const isEdit = pathParts.includes('edit');
+            const productId = isEdit ? pathParts[pathParts.length - 1] : null;
+            
+            // Set form action and page title based on whether we're adding or editing
+            const form = document.getElementById('product-form');
+            const pageTitle = document.getElementById('page-title');
+            const submitText = document.getElementById('submit-text');
+            
+            if (isEdit) {
+                form.action = `/admin/products/edit/${productId}`;
+                pageTitle.textContent = 'Edit Product';
+                submitText.textContent = 'Update';
+                
+                // Load product data
+                loadProductData(productId);
+            } else {
+                form.action = '/admin/products/add';
+                pageTitle.textContent = 'Add New Product';
+                submitText.textContent = 'Save';
+                
+                // Set image as required for new products
+                document.getElementById('image').setAttribute('required', 'required');
             }
+            
+            // Check for error parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            
+            if (error) {
+                showError(decodeURIComponent(error));
+            }
+            
+            // Preview image before upload
+            document.getElementById('image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        let preview = document.querySelector('.image-preview');
+                        if (!preview) {
+                            preview = document.createElement('div');
+                            preview.className = 'image-preview';
+                            const img = document.createElement('img');
+                            preview.appendChild(img);
+                            document.getElementById('image-preview-container').innerHTML = '';
+                            document.getElementById('image-preview-container').appendChild(preview);
+                        }
+                        preview.querySelector('img').src = event.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
         });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to load product data for editing
+        function loadProductData(productId) {
+            fetch(`/api/admin/products/${productId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load product');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const product = data.product;
+                    
+                    // Fill form fields with product data
+                    document.getElementById('name').value = product.name || '';
+                    document.getElementById('description').value = product.description || '';
+                    document.getElementById('category').value = product.category || '';
+                    document.getElementById('featured').checked = product.featured || false;
+                    
+                    // Update image label
+                    document.getElementById('image-label').textContent = 'Product Image (leave empty to keep current image)';
+                    document.getElementById('image').removeAttribute('required');
+                    
+                    // Show current image preview if it exists
+                    if (product.imageUrl) {
+                        const previewContainer = document.getElementById('image-preview-container');
+                        const preview = document.createElement('div');
+                        preview.className = 'image-preview';
+                        preview.innerHTML = `<img src="${product.imageUrl}" alt="${product.name}">`;
+                        previewContainer.appendChild(preview);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading product data:', error);
+                    showError('Failed to load product');
+                });
+        }
+        
+        // Function to show error message
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+        }
     </script>
 </body>
 </html>

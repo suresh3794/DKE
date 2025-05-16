@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button id="testDebug">Test Debug Endpoint</button>
+    <button id="testProducts">Test Products Endpoint</button>
+    <button id="testGallery">Test Gallery Endpoint</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testDebug').addEventListener('click', function() {
+            fetch('/api/debug')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('result').textContent = 'Error: ' + error.message;
+                });
+        });
+
+        document.getElementById('testProducts').addEventListener('click', function() {
+            fetch('/api/products-list')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('result').textContent = 'Error: ' + error.message;
+                });
+        });
+
+        document.getElementById('testGallery').addEventListener('click', function() {
+            fetch('/api/gallery-items')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('result').textContent = 'Error: ' + error.message;
+                });
+        });
+    </script>
+</body>
+</html>

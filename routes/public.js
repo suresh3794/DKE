@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const path = require('path');
 
 const Gallery = mongoose.model('Gallery');
 const Product = mongoose.model('Product');
@@ -33,24 +34,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// About page
+// About page - update to serve HTML file
 router.get('/about', (req, res) => {
-  res.render('about');
+  res.sendFile(path.join(__dirname, '../public/about.html'));
 });
 
 // Gallery page
-router.get('/gallery', async (req, res) => {
-  try {
-    const galleryItems = await Gallery.find().sort({ createdAt: -1 });
-    res.render('gallery', { 
-      galleryItems,
-      title: 'Gallery',
-      page: 'gallery'
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).render('error', { message: 'Failed to load gallery' });
-  }
+router.get('/gallery', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/gallery.html'));
 });
 
 // API endpoint for gallery items
@@ -65,14 +56,8 @@ router.get('/api/gallery', async (req, res) => {
 });
 
 // Products page
-router.get('/products', async (req, res) => {
-  try {
-    const products = await Product.find().sort({ category: 1 });
-    res.render('products', { products });
-  } catch (err) {
-    console.error(err);
-    res.status(500).render('error', { message: 'Failed to load products' });
-  }
+router.get('/products', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/products.html'));
 });
 
 // Product detail page
@@ -98,13 +83,7 @@ router.get('/products/:id', async (req, res) => {
 
 // Contact page
 router.get('/contact', (req, res) => {
-  res.render('contact', { 
-    page: 'contact',
-    title: 'Contact Us',
-    product: req.query.product || '',
-    success: req.query.success || '',
-    error: req.query.error || ''
-  });
+  res.sendFile(path.join(__dirname, '../public/contact.html'));
 });
 
 // Contact form submission
@@ -139,22 +118,9 @@ router.post('/contact', async (req, res) => {
 
 // Contact success page
 router.get('/contact/success', (req, res) => {
-  res.render('contact-success');
+  res.sendFile(path.join(__dirname, '../public/contact-success.html'));
 });
 
-// Testimonials page
-router.get('/testimonials', async (req, res) => {
-  try {
-    const testimonials = await Testimonial.find().sort({ createdAt: -1 });
-    res.render('testimonials', { 
-      testimonials,
-      title: 'Client Testimonials',
-      page: 'testimonials'
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).render('error', { message: 'Failed to load testimonials' });
-  }
-});
+
 
 module.exports = router;

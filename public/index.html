@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dignity Kitchen Equipments</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header will be loaded dynamically -->
+    <div id="header-container"></div>
+
+    <section class="hero">
+        <div class="hero-slider">
+            <!-- Slides will be populated by JS -->
+            <div id="slides-container"></div>
+            
+            <!-- Slide indicators will be populated by JS -->
+            <div class="slide-indicators" id="indicators-container"></div>
+        </div>
+        
+        <div class="hero-content">
+            <h1 id="site-name"></h1>
+            <p id="site-tagline"></p>
+            <a href="/products" class="btn">View Products</a>
+        </div>
+    </section>
+
+    <section class="featured-products">
+        <div class="container">
+            <h2 class="section-title">Featured Products</h2>
+            <div class="product-grid" id="featured-products-container">
+                <!-- Products will be populated by JS -->
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials">
+        <div class="container">
+            <h2 class="section-title">What Our Clients Say</h2>
+            <div class="testimonial-slider" id="testimonials-container">
+                <!-- Testimonials will be populated by JS -->
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Upgrade Your Kitchen?</h2>
+            <p>Contact us today for a free consultation and quote</p>
+            <a href="/contact" class="btn">Get in Touch</a>
+        </div>
+    </section>
+    
+    <!-- Footer will be loaded dynamically -->
+    <div id="footer-container"></div>
+
+    <script src="/js/main.js"></script>
+    
+    <!-- Inline JavaScript for index page -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load header and footer
+            loadComponent('header', 'header-container', { page: 'home' });
+            loadComponent('footer', 'footer-container');
+            
+            // Fetch site settings and render content
+            fetchSettings();
+            
+            // Fetch featured products
+            fetchFeaturedProducts();
+            
+            // Fetch testimonials
+            fetchTestimonials();
+        });
+
+        // Function to load header and footer components
+        function loadComponent(component, targetId, data = {}) {
+            console.log(`Loading component: ${component}`);
+            fetch(`/components/${component}.html`)
+                .then(response => response.text())
+                .then(html => {
+                    // Insert the HTML
+                    document.getElementById(targetId).innerHTML = html;
+                    
+                    // Find and execute scripts
+                    const scripts = document.getElementById(targetId).getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = scripts[i];
+                        const scriptClone = document.createElement('script');
+                        
+                        // Copy attributes
+                        for (let j = 0; j < script.attributes.length; j++) {
+                            const attr = script.attributes[j];
+                            scriptClone.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Copy content
+                        scriptClone.textContent = script.textContent;
+                        
+                        // Replace the original script with the clone to execute it
+                        script.parentNode.replaceChild(scriptClone, script);
+                    }
+                    
+                    if (component === 'header') {
+                        // Initialize any header-specific JS
+                        highlightCurrentPage(data.page);
+                    }
+                    
+                    console.log(`Component loaded and scripts executed: ${component}`);
+                })
+                .catch(error => console.error(`Error loading ${component}:`, error));
+        }
+
+        // Function to highlight current page in navigation
+        function highlightCurrentPage(page) {
+            const menuItems = document.querySelectorAll('.menu li a');
+            menuItems.forEach(item => {
+                if (item.getAttribute('href') === '/' && page === 'home') {
+                    item.parentElement.classList.add('active');
+                }
+            });
+        }
+
+        // Function to fetch site settings
+        function fetchSettings() {
+            fetch('/api/settings')
+                .then(response => response.json())
+                .then(settings => {
+                    // Update page title
+                    document.title = settings.siteName;
+                    
+                    // Update hero content
+                    document.getElementById('site-name').textContent = settings.siteName;
+                    document.getElementById('site-tagline').textContent = settings.siteTagline;
+                    
+                    // Create hero slides
+                    createHeroSlides(settings);
+                })
+                .catch(error => console.error('Error fetching settings:', error));
+        }
+
+        // Function to create hero slides
+        function createHeroSlides(settings) {
+            const slidesContainer = document.getElementById('slides-container');
+            const indicatorsContainer = document.getElementById('indicators-container');
+            
+            for (let i = 0; i < 6; i++) {
+                // Create slide
+                const slide = document.createElement('div');
+                slide.className = `slide ${i === 0 ? 'active' : ''}`;
+                
+                const img = document.createElement('img');
+                img.src = settings.heroSlides && settings.heroSlides[i] 
+                    ? settings.heroSlides[i] 
+                    : `/images/hero/slide${i+1}.jpg`;
+                img.alt = `Kitchen Equipment Slide ${i+1}`;
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'slide-overlay';
+                
+                slide.appendChild(img);
+                slide.appendChild(overlay);
+                slidesContainer.appendChild(slide);
+                
+                // Create indicator
+                const indicator = document.createElement('span');
+                indicator.className = `indicator ${i === 0 ? 'active' : ''}`;
+                indicator.setAttribute('data-slide', i);
+                indicatorsContainer.appendChild(indicator);
+            }
+            
+            // Initialize slider functionality
+            initializeSlider();
+        }
+
+        // Function to initialize slider
+        function initializeSlider() {
+            const indicators = document.querySelectorAll('.indicator');
+            indicators.forEach(indicator => {
+                indicator.addEventListener('click', function() {
+                    const slideIndex = this.getAttribute('data-slide');
+                    showSlide(parseInt(slideIndex));
+                });
+            });
+            
+            // Auto slide change
+            const slides = document.querySelectorAll('.slide');
+            if (slides && slides.length > 0) {
+                let currentSlide = 0;
+                setInterval(function() {
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    showSlide(currentSlide);
+                }, 5000);
+            }
+        }
+
+        // Function to show a specific slide
+        function showSlide(index) {
+            const slides = document.querySelectorAll('.slide');
+            const indicators = document.querySelectorAll('.indicator');
+            
+            // Handle index wrapping
+            if (index >= slides.length) index = 0;
+            if (index < 0) index = slides.length - 1;
+            
+            // Hide all slides and remove active class from indicators
+            slides.forEach(slide => slide.classList.remove('active'));
+            indicators.forEach(indicator => indicator.classList.remove('active'));
+            
+            // Show selected slide and activate indicator
+            slides[index].classList.add('active');
+            indicators[index].classList.add('active');
+        }
+
+        // Function to fetch featured products
+        function fetchFeaturedProducts() {
+            fetch('/api/products/featured')
+                .then(response => response.json())
+                .then(products => {
+                    const container = document.getElementById('featured-products-container');
+                    
+                    if (products && products.length > 0) {
+                        products.forEach(product => {
+                            container.appendChild(createProductCard(product));
+                        });
+                    } else {
+                        // Add fallback products if none are returned
+                        addFallbackProducts(container);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching featured products:', error);
+                    // Add fallback products on error
+                    addFallbackProducts(document.getElementById('featured-products-container'));
+                });
+        }
+
+        // Function to create a product card
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            
+            const img = document.createElement('img');
+            img.src = product.imageUrl;
+            img.alt = product.name;
+            
+            const title = document.createElement('h3');
+            title.textContent = product.name;
+            
+            const description = document.createElement('p');
+            description.textContent = product.description.length > 100 
+                ? product.description.substring(0, 100) + '...' 
+                : product.description;
+            
+            const link = document.createElement('a');
+            link.href = `/products#${product.category}`;
+            link.className = 'btn-small';
+            link.textContent = 'View Details';
+            
+            card.appendChild(img);
+            card.appendChild(title);
+            card.appendChild(description);
+            card.appendChild(link);
+            
+            return card;
+        }
+/*
+        // Function to add fallback products
+        function addFallbackProducts(container) {
+            const fallbackProducts = [
+                {
+                    imageUrl: '/images/products/product1.jpg',
+                    name: 'Commercial Oven',
+                    description: 'High-capacity commercial oven for restaurants',
+                    category: 'cooking'
+                },
+                {
+                    imageUrl: '/images/products/product2.jpg',
+                    name: 'Refrigeration Unit',
+                    description: 'Energy-efficient commercial refrigeration',
+                    category: 'refrigeration'
+                },
+                {
+                    imageUrl: '/images/products/product3.jpg',
+                    name: 'Food Processor',
+                    description: 'Industrial food processor for high-volume kitchens',
+                    category: 'processors'
+                }
+            ];
+            
+            fallbackProducts.forEach(product => {
+                container.appendChild(createProductCard(product));
+            });
+        }
+*/
+        // Function to fetch testimonials
+        function fetchTestimonials() {
+            fetch('/api/testimonials/featured')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load testimonials');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const container = document.getElementById('testimonials-container');
+                    
+                    // Clear any existing content
+                    container.innerHTML = '';
+                    
+                    // Check if data is an array or has a testimonials property
+                    const testimonials = Array.isArray(data) ? data : (data.testimonials || []);
+                    
+                    if (testimonials && testimonials.length > 0) {
+                        testimonials.forEach(testimonial => {
+                            container.appendChild(createTestimonialCard(testimonial));
+                        });
+                    } else {
+                        // Add fallback testimonial if none are returned
+                        const fallbackTestimonial = {
+                            content: 'Dignity Kitchen Equipments provided us with top-quality appliances that have significantly improved our kitchen efficiency.',
+                            rating: 5,
+                            name: 'Sekar',
+                            position: 'Executive Chef',
+                            company: 'Grand Hotel',
+                            imageUrl: '/images/clients/client1.jpg'
+                        };
+                        container.appendChild(createTestimonialCard(fallbackTestimonial));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching testimonials:', error);
+                    // Add fallback testimonial on error
+                    const fallbackTestimonial = {
+                        content: 'Dignity Kitchen Equipments provided us with top-quality appliances that have significantly improved our kitchen efficiency.',
+                        rating: 5,
+                        name: 'Vignesh',
+                        position: 'Executive Chef',
+                        company: 'Grand Hotel',
+                        imageUrl: '/images/clients/client1.jpg'
+                    };
+                    document.getElementById('testimonials-container').appendChild(createTestimonialCard(fallbackTestimonial));
+                });
+        }
+
+        // Function to create a testimonial card
+        function createTestimonialCard(testimonial) {
+            const card = document.createElement('div');
+            card.className = 'testimonial';
+            
+            // Testimonial content
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'testimonial-content';
+            
+            const quote = document.createElement('p');
+            quote.textContent = `"${testimonial.content}"`;
+            
+            const ratingDiv = document.createElement('div');
+            ratingDiv.className = 'rating';
+            
+            // Add star ratings
+            for (let i = 0; i < 5; i++) {
+                const star = document.createElement('i');
+                star.className = i < testimonial.rating ? 'fas fa-star' : 'far fa-star';
+                ratingDiv.appendChild(star);
+            }
+            
+            contentDiv.appendChild(quote);
+            contentDiv.appendChild(ratingDiv);
+            
+            // Client info
+            const clientDiv = document.createElement('div');
+            clientDiv.className = 'client';
+            
+            const clientImg = document.createElement('img');
+            clientImg.src = testimonial.imageUrl || '/images/default-avatar.png';
+            clientImg.alt = testimonial.name;
+            
+            const clientInfo = document.createElement('div');
+            
+            const clientName = document.createElement('h4');
+            clientName.textContent = testimonial.name;
+            
+            const clientPosition = document.createElement('p');
+            clientPosition.textContent = testimonial.position;
+            if (testimonial.company) {
+                clientPosition.textContent += `, ${testimonial.company}`;
+            }
+            
+            clientInfo.appendChild(clientName);
+            clientInfo.appendChild(clientPosition);
+            
+            clientDiv.appendChild(clientImg);
+            clientDiv.appendChild(clientInfo);
+            
+            // Assemble the card
+            card.appendChild(contentDiv);
+            card.appendChild(clientDiv);
+            
+            return card;
+        }
+    </script>
+</body>
+</html>

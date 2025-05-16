@@ -1,0 +1,66 @@
+<header>
+    <div class="top-bar">
+        <div class="contact-info">
+            <span><i class="fas fa-phone"></i> <span id="contact-phone"></span></span>
+            <span><i class="fas fa-envelope"></i> <span id="contact-email"></span></span>
+        </div>
+        <div class="social-icons">
+            <a href="#" id="social-facebook" target="_blank"><i class="fab fa-facebook"></i></a>
+            <a href="#" id="social-instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="#" id="social-twitter" target="_blank"><i class="fab fa-twitter"></i></a>
+        </div>
+    </div>
+    <nav>
+        <div class="logo">
+            <img src="/images/logo.png" alt="Logo">
+            <div class="logo-text">
+                <h1 id="header-site-name"></h1>
+                <p id="header-site-tagline"></p>
+            </div>
+        </div>
+        <ul class="menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/products">Products</a></li>
+            <li><a href="/gallery">Gallery</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+        <div class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </div>
+    </nav>
+</header>
+
+<script>
+    console.log('Header script running');
+    // Fetch settings to populate header data
+    fetch('/api/settings')
+        .then(response => {
+            console.log('Header settings response status:', response.status);
+            return response.json();
+        })
+        .then(settings => {
+            console.log('Header settings loaded:', settings);
+            
+            // Update contact info
+            document.getElementById('contact-phone').textContent = settings.contactPhone || '';
+            document.getElementById('contact-email').textContent = settings.contactEmail || '';
+            console.log('Contact info updated:', {
+                phone: settings.contactPhone,
+                email: settings.contactEmail
+            });
+            
+            // Update social links
+            document.getElementById('social-facebook').href = settings.socialFacebook || '#';
+            document.getElementById('social-instagram').href = settings.socialInstagram || '#';
+            document.getElementById('social-twitter').href = settings.socialTwitter || '#';
+            
+            // Update site name and tagline
+            document.getElementById('header-site-name').textContent = settings.siteName || '';
+            document.getElementById('header-site-tagline').textContent = settings.siteTagline || '';
+            
+            // Update logo alt text
+            document.querySelector('.logo img').alt = settings.siteName + ' Logo';
+        })
+        .catch(error => console.error('Error loading header data:', error));
+</script>

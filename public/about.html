@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Dignity Kitchen Equipments</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/about.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header will be loaded dynamically -->
+    <div id="header-container"></div>
+
+    <section class="about-intro">
+        <div class="container">
+            <h2 class="section-title">About Us</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p id="about-text-content"></p>
+                    <!-- Additional about content can remain -->
+                </div>
+                <div class="about-image">
+                    <img src="/images/about-image.jpg" alt="About Dignity Kitchen">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="values-section">
+        <div class="container">
+            <h2 class="section-title">Our Values</h2>
+            <div class="values-grid">
+                <div class="value-card">
+                    <i class="fas fa-medal"></i>
+                    <h3>Quality</h3>
+                    <p>We are committed to providing products of the highest quality that meet international standards.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-handshake"></i>
+                    <h3>Integrity</h3>
+                    <p>We conduct our business with honesty, transparency, and ethical practices.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-lightbulb"></i>
+                    <h3>Innovation</h3>
+                    <p>We continuously seek innovative solutions to improve our products and services.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Customer Focus</h3>
+                    <p>We prioritize our customers' needs and strive to exceed their expectations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="team-section">
+        <div class="container">
+            <h2 class="section-title">Our Team</h2>
+            <div class="team-grid">
+                <div class="team-member">
+                    <img src="/images/team/member1.jpg" alt="Team Member">
+                    <h3>Saravanan R</h3>
+                    <p>Founder & CEO</p>
+                </div>
+                <div class="team-member">
+                    <img src="/images/team/member2.jpg" alt="Team Member">
+                    <h3>xxx</h3>
+                    <p>Operations Manager</p>
+                </div>
+                <div class="team-member">
+                    <img src="/images/team/member3.jpg" alt="Team Member">
+                    <h3>xxx</h3>
+                    <p>Technical Director</p>
+                </div>
+                <div class="team-member">
+                    <img src="/images/team/member4.jpg" alt="Team Member">
+                    <h3>xxx</h3>
+                    <p>Customer Relations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Work With Us?</h2>
+            <p>Contact our team to discuss your kitchen equipment needs</p>
+            <a href="/contact" class="btn">Get in Touch</a>
+        </div>
+    </section>
+    
+    <!-- Footer will be loaded dynamically -->
+    <div id="footer-container"></div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load header and footer
+            loadComponent('header', 'header-container', { page: 'about' });
+            loadComponent('footer', 'footer-container');
+            
+            // Fetch site settings and render content
+            fetchSettings();
+        });
+
+        // Function to load header and footer components
+        function loadComponent(component, targetId, data = {}) {
+            console.log(`Loading component: ${component}`);
+            fetch(`/components/${component}.html`)
+                .then(response => response.text())
+                .then(html => {
+                    // Insert the HTML
+                    document.getElementById(targetId).innerHTML = html;
+                    
+                    // Find and execute scripts
+                    const scripts = document.getElementById(targetId).getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = scripts[i];
+                        const scriptClone = document.createElement('script');
+                        
+                        // Copy attributes
+                        for (let j = 0; j < script.attributes.length; j++) {
+                            const attr = script.attributes[j];
+                            scriptClone.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Copy content
+                        scriptClone.textContent = script.textContent;
+                        
+                        // Replace the original script with the clone to execute it
+                        script.parentNode.replaceChild(scriptClone, script);
+                    }
+                    
+                    if (component === 'header') {
+                        // Initialize any header-specific JS
+                        highlightCurrentPage(data.page);
+                    }
+                    
+                    console.log(`Component loaded and scripts executed: ${component}`);
+                })
+                .catch(error => console.error(`Error loading ${component}:`, error));
+        }
+
+        // Function to highlight current page in navigation
+        function highlightCurrentPage(page) {
+            const menuItems = document.querySelectorAll('.menu li a');
+            menuItems.forEach(item => {
+                if ((item.getAttribute('href') === '/about' || item.getAttribute('href') === 'about.html') && page === 'about') {
+                    item.parentElement.classList.add('active');
+                }
+            });
+        }
+
+        // Function to fetch site settings
+        function fetchSettings() {
+            fetch('/api/settings')
+                .then(response => response.json())
+                .then(settings => {
+                    // Update page title
+                    document.title = 'About Us - ' + settings.siteName;
+                    
+                    // Update about text content
+                    document.getElementById('about-text-content').textContent = settings.aboutText || 'Dignity Kitchen Equipments is a leading provider of high-quality kitchen equipment for commercial and industrial use. With years of experience in the industry, we have established ourselves as a trusted partner for restaurants, hotels, and food service businesses.';
+                    
+                    // Update image alt text
+                    document.querySelector('.about-image img').alt = 'About ' + settings.siteName;
+                })
+                .catch(error => {
+                    console.error('Error fetching settings:', error);
+                    // Set default about text if fetch fails
+                    document.getElementById('about-text-content').textContent = 'Dignity Kitchen Equipments is a leading provider of high-quality kitchen equipment for commercial and industrial use. With years of experience in the industry, we have established ourselves as a trusted partner for restaurants, hotels, and food service businesses.';
+                });
+        }
+    </script>
+</body>
+</html>

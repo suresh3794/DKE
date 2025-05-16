@@ -208,39 +208,93 @@
                 </div>
             </header>
             
-            <% if (typeof message !== 'undefined' && message) { %>
-                <div class="message success-message">
-                    <i class="fas fa-check-circle"></i>
-                    <%= message %>
-                </div>
-            <% } %>
+            <div id="message-container"></div>
             
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="message error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <%= error %>
-                </div>
-            <% } %>
+            <div id="contact-detail-container" class="message-container">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
             
-            <div class="message-container">
+            // Get contact ID from URL
+            const contactId = window.location.pathname.split('/').pop();
+            
+            // Load contact details
+            loadContactDetails(contactId);
+            
+            // Check for success/error messages in URL
+            checkMessages();
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to load contact details
+        function loadContactDetails(contactId) {
+            // Try multiple endpoints in sequence
+            fetch(`/api/admin/contacts/${contactId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        console.log('First endpoint failed, trying second endpoint');
+                        return fetch(`/admin/api/contacts/${contactId}`);
+                    }
+                    return response;
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load contact details');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderContactDetails(data.contact);
+                })
+                .catch(error => {
+                    console.error('Error loading contact details:', error);
+                    showMessage('error', 'Failed to load contact details');
+                });
+        }
+        
+        // Function to render contact details
+        function renderContactDetails(contact) {
+            const createdDate = new Date(contact.createdAt).toLocaleString();
+            const statusCapitalized = contact.status.charAt(0).toUpperCase() + contact.status.slice(1);
+            
+            let contactHtml = `
                 <div class="message-header">
                     <div class="message-meta">
-                        <h2><%= contact.subject %></h2>
-                        <p>From: <%= contact.name %></p>
-                        <p class="message-date">Received: <%= new Date(contact.createdAt).toLocaleString() %></p>
+                        <h2>${contact.subject}</h2>
+                        <p>From: ${contact.name}</p>
+                        <p class="message-date">Received: ${createdDate}</p>
                     </div>
                     
                     <div class="message-status">
-                        <span class="status-badge status-<%= contact.status %>">
-                            <%= contact.status.charAt(0).toUpperCase() + contact.status.slice(1) %>
+                        <span class="status-badge status-${contact.status}">
+                            ${statusCapitalized}
                         </span>
                         
-                        <form action="/admin/contacts/status/<%= contact._id %>" method="POST" class="status-form">
+                        <form action="/admin/contacts/status/${contact._id}" method="POST" class="status-form">
                             <select name="status">
-                                <option value="new" <%= contact.status === 'new' ? 'selected' : '' %>>New</option>
-                                <option value="read" <%= contact.status === 'read' ? 'selected' : '' %>>Read</option>
-                                <option value="replied" <%= contact.status === 'replied' ? 'selected' : '' %>>Replied</option>
-                                <option value="archived" <%= contact.status === 'archived' ? 'selected' : '' %>>Archived</option>
+                                <option value="new" ${contact.status === 'new' ? 'selected' : ''}>New</option>
+                                <option value="read" ${contact.status === 'read' ? 'selected' : ''}>Read</option>
+                                <option value="replied" ${contact.status === 'replied' ? 'selected' : ''}>Replied</option>
+                                <option value="archived" ${contact.status === 'archived' ? 'selected' : ''}>Archived</option>
                             </select>
                             <button type="submit" class="btn btn-secondary">Update</button>
                         </form>
@@ -251,27 +305,31 @@
                     <h3>Contact Information</h3>
                     <div class="contact-info-item">
                         <i class="fas fa-user"></i>
-                        <span><%= contact.name %></span>
+                        <span>${contact.name}</span>
                     </div>
                     <div class="contact-info-item">
                         <i class="fas fa-envelope"></i>
-                        <span><%= contact.email %></span>
+                        <span>${contact.email}</span>
                     </div>
                     <div class="contact-info-item">
                         <i class="fas fa-phone"></i>
-                        <span><%= contact.phone || 'No phone provided' %></span>
-                    </div>
-                    <% if (contact.product) { %>
+                        <span>${contact.phone || 'No phone provided'}</span>
+                    </div>`;
+                    
+            if (contact.product) {
+                contactHtml += `
                     <div class="contact-info-item">
                         <i class="fas fa-box"></i>
-                        <span>Regarding product: <%= contact.product %></span>
-                    </div>
-                    <% } %>
+                        <span>Regarding product: ${contact.product}</span>
+                    </div>`;
+            }
+                
+            contactHtml += `
                 </div>
                 
                 <h3>Message</h3>
                 <div class="message-content">
-                    <%= contact.message %>
+                    ${contact.message}
                 </div>
                 
                 <div class="message-actions">
@@ -280,19 +338,49 @@
                             <i class="fas fa-arrow-left"></i> Back to List
                         </a>
                         
-                        <a href="mailto:<%= contact.email %>?subject=Re: <%= contact.subject %>" class="btn btn-primary">
+                        <a href="mailto:${contact.email}?subject=Re: ${contact.subject}" class="btn btn-primary">
                             <i class="fas fa-reply"></i> Reply via Email
                         </a>
                     </div>
                     
-                    <form action="/admin/contacts/delete/<%= contact._id %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this message?');">
+                    <form action="/admin/contacts/delete/${contact._id}" method="POST" onsubmit="return confirm('Are you sure you want to delete this message?');">
                         <button type="submit" class="btn btn-danger">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </form>
                 </div>
-            </div>
-        </main>
-    </div>
+            `;
+            
+            document.getElementById('contact-detail-container').innerHTML = contactHtml;
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+            
+            if (message) {
+                showMessage('success', message);
+            }
+            
+            if (error) {
+                showMessage('error', error);
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
+        }
+    </script>
 </body>
 </html>

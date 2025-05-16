@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Gallery - Dignity Kitchen Equipments</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/gallery.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header will be loaded dynamically -->
+    <div id="header-container"></div>
+
+    <section class="page-banner">
+        <h1>Our Gallery</h1>
+        <p>View our installations and products in action</p>
+    </section>
+
+    <section class="gallery-section">
+        <div class="container">
+            <div class="gallery-filter">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="installations">Installations</button>
+                <button class="filter-btn" data-filter="products">Products</button>
+                <button class="filter-btn" data-filter="events">Events</button>
+                
+                <div class="product-subfilters" style="display: none;">
+                    <button class="filter-btn sub-filter" data-filter="cooking">Cooking</button>
+                    <button class="filter-btn sub-filter" data-filter="refrigeration">Refrigeration</button>
+                    <button class="filter-btn sub-filter" data-filter="preparation">Preparation</button>
+                    <button class="filter-btn sub-filter" data-filter="storage">Storage</button>
+                </div>
+            </div>
+
+            <div id="gallery-container">
+                <!-- Gallery items will be loaded dynamically -->
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading gallery...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Interested in Our Products?</h2>
+            <p>Browse our full range of kitchen equipment</p>
+            <a href="/products" class="btn">View Products</a>
+        </div>
+    </section>
+    
+    <!-- Footer will be loaded dynamically -->
+    <div id="footer-container"></div>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/gallery.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load header and footer
+            loadComponent('header', 'header-container', { page: 'gallery' });
+            loadComponent('footer', 'footer-container');
+            
+            // Fetch gallery items
+            fetchGalleryItems();
+        });
+
+        // Function to load header and footer components
+        function loadComponent(component, targetId, data = {}) {
+            console.log(`Loading component: ${component}`);
+            fetch(`/components/${component}.html`)
+                .then(response => response.text())
+                .then(html => {
+                    // Insert the HTML
+                    document.getElementById(targetId).innerHTML = html;
+                    
+                    // Find and execute scripts
+                    const scripts = document.getElementById(targetId).getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = scripts[i];
+                        const scriptClone = document.createElement('script');
+                        
+                        // Copy attributes
+                        for (let j = 0; j < script.attributes.length; j++) {
+                            const attr = script.attributes[j];
+                            scriptClone.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Copy content
+                        scriptClone.textContent = script.textContent;
+                        
+                        // Replace the original script with the clone to execute it
+                        script.parentNode.replaceChild(scriptClone, script);
+                    }
+                    
+                    if (component === 'header') {
+                        // Initialize any header-specific JS
+                        highlightCurrentPage(data.page);
+                    }
+                    
+                    console.log(`Component loaded and scripts executed: ${component}`);
+                })
+                .catch(error => console.error(`Error loading ${component}:`, error));
+        }
+
+        // Function to highlight current page in navigation
+        function highlightCurrentPage(page) {
+            const menuItems = document.querySelectorAll('.menu li a');
+            menuItems.forEach(item => {
+                if ((item.getAttribute('href') === '/gallery' || item.getAttribute('href') === 'gallery.html') && page === 'gallery') {
+                    item.parentElement.classList.add('active');
+                }
+            });
+        }
+
+        // Function to fetch gallery items
+        function fetchGalleryItems() {
+            fetch('/api/gallery')
+                .then(response => response.json())
+                .then(galleryItems => {
+                    const container = document.getElementById('gallery-container');
+                    
+                    // Clear loading spinner
+                    container.innerHTML = '';
+                    
+                    if (galleryItems && galleryItems.length > 0) {
+                        // Create gallery grid
+                        const galleryGrid = document.createElement('div');
+                        galleryGrid.className = 'gallery-grid';
+                        
+                        galleryItems.forEach(item => {
+                            galleryGrid.appendChild(createGalleryItem(item));
+                        });
+                        
+                        container.appendChild(galleryGrid);
+                    } else {
+                        // No gallery items available
+                        const noItems = document.createElement('div');
+                        noItems.className = 'no-items';
+                        noItems.innerHTML = `
+                            <i class="fas fa-images"></i>
+                            <h3>No Gallery Items Yet</h3>
+                            <p>Check back soon for our latest installations and products.</p>
+                        `;
+                        container.appendChild(noItems);
+                    }
+                    
+                    // Initialize gallery filtering and lightbox
+                    // The gallery.js file will handle this
+                })
+                .catch(error => {
+                    console.error('Error fetching gallery items:', error);
+                    const container = document.getElementById('gallery-container');
+                    container.innerHTML = '<div class="error-message"><p>Failed to load gallery items. Please try again later.</p></div>';
+                });
+        }
+
+        // Function to create a gallery item
+        function createGalleryItem(item) {
+            const galleryItem = document.createElement('div');
+            galleryItem.className = 'gallery-item';
+            galleryItem.setAttribute('data-category', item.category);
+            
+            if (item.category === 'products' && item.productCategory) {
+                galleryItem.setAttribute('data-product-category', item.productCategory);
+            }
+            
+            const img = document.createElement('img');
+            img.src = item.imageUrl;
+            img.alt = item.title;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'gallery-overlay';
+            
+            const title = document.createElement('h3');
+            title.textContent = item.title;
+            
+            const description = document.createElement('p');
+            description.textContent = item.description;
+            
+            overlay.appendChild(title);
+            overlay.appendChild(description);
+            
+            if (item.category === 'products' && item.productCategory) {
+                const categoryTag = document.createElement('span');
+                categoryTag.className = 'category-tag';
+                categoryTag.textContent = item.productCategory;
+                overlay.appendChild(categoryTag);
+            }
+            
+            galleryItem.appendChild(img);
+            galleryItem.appendChild(overlay);
+            
+            return galleryItem;
+        }
+    </script>
+</body>
+</html>

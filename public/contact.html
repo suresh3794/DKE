@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Dignity Kitchen</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/contact.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header will be loaded dynamically -->
+    <div id="header-container"></div>
+
+    <section class="page-banner">
+        <h1>Contact Us</h1>
+        <p>Get in touch with our team for inquiries and quotes</p>
+    </section>
+
+    <section class="contact-section">
+        <div class="container">
+            <div id="message-container">
+                <!-- Success/error messages will be displayed here -->
+            </div>
+            
+            <div class="contact-info-wrapper">
+                <div class="contact-info-grid">
+                    <div class="contact-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Our Location</h3>
+                        <p id="contact-address">Loading...</p>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fas fa-phone"></i>
+                        <h3>Phone Number</h3>
+                        <p id="contact-phone">Loading...</p>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fas fa-envelope"></i>
+                        <h3>Email Address</h3>
+                        <p id="contact-email">Loading...</p>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Business Hours</h3>
+                        <p>Monday - Friday: 9am - 6pm</p>
+                        <p>Saturday: 10am - 4pm</p>
+                    </div>
+                </div>
+                
+                <div class="contact-form">
+                    <h2>Send Us a Message</h2>
+                    <div id="formStatus">
+                        <!-- Form status messages will be displayed here -->
+                    </div>
+                    <form id="contactForm" action="/contact" method="POST">
+                        <div class="form-group">
+                            <label for="name">Your Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" required>
+                        </div>
+                        <div id="product-field" style="display: none;">
+                            <div class="form-group">
+                                <label for="product">Product</label>
+                                <input type="text" id="product" name="product" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Your Message</label>
+                            <textarea id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="map-section">
+        <div class="container">
+            <h2 class="section-title">Find Us</h2>
+            <div class="map-container">
+                <!-- Replace with your Google Maps embed code -->
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3885.5811767963!2d80.24518307575673!3d13.12967098695698!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a5265ea4c3b1f3f%3A0x63c60e674ffd680!2sGNT%20Rd%2C%20Erukkanchery%2C%20Chennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1689234567890!5m2!1sen!2sin" width="100%" height="450" frameborder="0" style="border:0;" allowfullscreen=""></iframe>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer will be loaded dynamically -->
+    <div id="footer-container"></div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Contact page DOM loaded');
+            
+            // Load header and footer first
+            loadComponent('header', 'header-container', { hideTopBar: true, page: 'contact' });
+            loadComponent('footer', 'footer-container');
+            
+            // Wait a short time to ensure components are loaded before loading settings
+            setTimeout(() => {
+                console.log('About to call loadSettings() after delay');
+                loadSettings();
+                console.log('Called loadSettings()');
+            }, 500);
+            
+            // Check for URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const success = urlParams.get('success');
+            const error = urlParams.get('error');
+            const product = urlParams.get('product');
+            
+            // Display success/error messages if present
+            if (success) {
+                showMessage('success', success);
+            }
+            
+            if (error) {
+                showMessage('error', error);
+            }
+            
+            // Set product if present
+            if (product) {
+                document.getElementById('product-field').style.display = 'block';
+                document.getElementById('product').value = product;
+            }
+            
+            // Form validation
+            const form = document.getElementById('contactForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const subject = document.getElementById('subject').value;
+                    const message = document.getElementById('message').value;
+                    
+                    if (!name || !email || !subject || !message) {
+                        e.preventDefault();
+                        showMessage('error', 'Please fill in all required fields');
+                        return false;
+                    }
+                });
+            }
+        });
+
+        // Function to load header and footer components
+        function loadComponent(component, targetId, data = {}) {
+            console.log(`Loading component: ${component}`);
+            fetch(`/components/${component}.html`)
+                .then(response => response.text())
+                .then(html => {
+                    // Insert the HTML
+                    document.getElementById(targetId).innerHTML = html;
+                    
+                    // Find and execute scripts
+                    const scripts = document.getElementById(targetId).getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = scripts[i];
+                        const scriptClone = document.createElement('script');
+                        
+                        // Copy attributes
+                        for (let j = 0; j < script.attributes.length; j++) {
+                            const attr = script.attributes[j];
+                            scriptClone.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Copy content
+                        scriptClone.textContent = script.textContent;
+                        
+                        // Replace the original script with the clone to execute it
+                        script.parentNode.replaceChild(scriptClone, script);
+                    }
+                    
+                    if (component === 'header') {
+                        // Initialize any header-specific JS
+                        highlightCurrentPage(data.page);
+                        
+                        // Apply any additional header customizations
+                        if (data.hideTopBar) {
+                            const topBar = document.querySelector('.top-bar');
+                            if (topBar) topBar.style.display = 'none';
+                        }
+                    }
+                    
+                    console.log(`Component loaded and scripts executed: ${component}`);
+                })
+                .catch(error => console.error(`Error loading ${component}:`, error));
+        }
+
+        // Function to highlight current page in navigation
+        function highlightCurrentPage(page) {
+            const menuItems = document.querySelectorAll('.menu li a');
+            menuItems.forEach(item => {
+                if ((item.getAttribute('href') === '/contact' || item.getAttribute('href') === 'contact.html') && page === 'contact') {
+                    item.parentElement.classList.add('active');
+                }
+            });
+        }
+
+        // Function to load settings
+        function loadSettings() {
+            console.log('Loading settings for contact page');
+            
+            // Debug: Check if elements exist before fetch
+            console.log('Contact elements before fetch:', {
+                addressElement: document.getElementById('contact-address'),
+                phoneElement: document.getElementById('contact-phone'),
+                emailElement: document.getElementById('contact-email')
+            });
+            
+            fetch('/api/settings')
+                .then(response => {
+                    console.log('Settings response status:', response.status);
+                    return response.json();
+                })
+                .then(settings => {
+                    console.log('Contact page settings loaded:', settings);
+                    
+                    // Get references to elements
+                    const addressElement = document.getElementById('contact-address');
+                    const phoneElement = document.getElementById('contact-phone');
+                    const emailElement = document.getElementById('contact-email');
+                    
+                    console.log('Contact elements found:', {
+                        addressElement: addressElement,
+                        phoneElement: phoneElement,
+                        emailElement: emailElement
+                    });
+                    
+                    // Update contact info with null checks
+                    if (addressElement) {
+                        addressElement.textContent = settings.contactAddress || '';
+                        console.log('Updated address to:', settings.contactAddress);
+                    } else {
+                        console.error('contact-address element not found');
+                    }
+                    
+                    if (phoneElement) {
+                        phoneElement.textContent = settings.contactPhone || '';
+                        console.log('Updated phone to:', settings.contactPhone);
+                    } else {
+                        console.error('contact-phone element not found');
+                    }
+                    
+                    if (emailElement) {
+                        emailElement.textContent = settings.contactEmail || '';
+                        console.log('Updated email to:', settings.contactEmail);
+                    } else {
+                        console.error('contact-email element not found');
+                    }
+                    
+                    // Update page title
+                    document.title = `Contact Us - ${settings.siteName}`;
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                    // Set default values if settings can't be loaded
+                    const addressElement = document.getElementById('contact-address');
+                    const phoneElement = document.getElementById('contact-phone');
+                    const emailElement = document.getElementById('contact-email');
+                    
+                    if (addressElement) addressElement.textContent = '123 Main Street, City, Country';
+                    if (phoneElement) phoneElement.textContent = '+1 (555) 123-4567';
+                    if (emailElement) emailElement.textContent = 'contact@dignitykitchen.com';
+                });
+        }
+
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const formStatus = document.getElementById('formStatus');
+            
+            const messageHTML = `
+                <div class="${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
+            formStatus.innerHTML = messageHTML;
+        }
+        
+        // Debug script to find what's causing the JSON parsing error
+        console.log('Contact page loaded');
+        
+        // Monitor all fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            console.log('Fetch called with:', arguments);
+            return originalFetch.apply(this, arguments)
+                .catch(error => {
+                    console.error('Fetch error details:', {
+                        url: arguments[0],
+                        options: arguments[1],
+                        error: error
+                    });
+                    throw error;
+                });
+        };
+        
+        // Monitor all XMLHttpRequest
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function() {
+            console.log('XMLHttpRequest opened with:', arguments);
+            return originalXHROpen.apply(this, arguments);
+        };
+        
+        // Log all script tags on the page
+        console.log('Scripts on this page:');
+        document.querySelectorAll('script').forEach((script, index) => {
+            console.log(`Script ${index}:`, {
+                src: script.src,
+                content: script.src ? '(external)' : script.innerHTML.substring(0, 100) + '...'
+            });
+        });
+    </script>
+</body>
+</html>

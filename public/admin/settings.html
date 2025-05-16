@@ -136,6 +136,27 @@
             padding: 6px 12px;
             font-size: 14px;
         }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-message {
+            background-color: #f0fff4;
+            color: #38a169;
+            border-left: 4px solid #38a169;
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            color: #e53e3e;
+            border-left: 4px solid #e53e3e;
+        }
     </style>
 </head>
 <body>
@@ -166,32 +187,20 @@
                 </div>
             </header>
             
-            <% if (typeof message !== 'undefined' && message) { %>
-                <div class="message success-message">
-                    <i class="fas fa-check-circle"></i>
-                    <%= message %>
-                </div>
-            <% } %>
-            
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="message error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <%= error %>
-                </div>
-            <% } %>
+            <div id="message-container"></div>
             
             <div class="settings-container">
-                <form action="/admin/settings" method="POST">
+                <form id="settings-form" action="/admin/settings" method="POST">
                     <div class="settings-section">
                         <h3>General Settings</h3>
                         <div class="form-group">
                             <label for="siteName">Site Name</label>
-                            <input type="text" id="siteName" name="siteName" class="form-control" value="<%= settings.siteName %>" required>
+                            <input type="text" id="siteName" name="siteName" class="form-control" required>
                         </div>
                         
                         <div class="form-group">
                             <label for="siteTagline">Site Tagline</label>
-                            <input type="text" id="siteTagline" name="siteTagline" class="form-control" value="<%= settings.siteTagline %>">
+                            <input type="text" id="siteTagline" name="siteTagline" class="form-control">
                         </div>
                     </div>
                     
@@ -199,17 +208,17 @@
                         <h3>Contact Information</h3>
                         <div class="form-group">
                             <label for="contactEmail">Contact Email</label>
-                            <input type="email" id="contactEmail" name="contactEmail" class="form-control" value="<%= settings.contactEmail %>" required>
+                            <input type="email" id="contactEmail" name="contactEmail" class="form-control" required>
                         </div>
                         
                         <div class="form-group">
                             <label for="contactPhone">Contact Phone</label>
-                            <input type="text" id="contactPhone" name="contactPhone" class="form-control" value="<%= settings.contactPhone %>">
+                            <input type="text" id="contactPhone" name="contactPhone" class="form-control">
                         </div>
                         
                         <div class="form-group">
                             <label for="contactAddress">Contact Address</label>
-                            <input type="text" id="contactAddress" name="contactAddress" class="form-control" value="<%= settings.contactAddress %>">
+                            <input type="text" id="contactAddress" name="contactAddress" class="form-control">
                         </div>
                     </div>
                     
@@ -217,17 +226,17 @@
                         <h3>Social Media</h3>
                         <div class="form-group">
                             <label for="socialFacebook">Facebook URL</label>
-                            <input type="url" id="socialFacebook" name="socialFacebook" class="form-control" value="<%= settings.socialFacebook %>">
+                            <input type="url" id="socialFacebook" name="socialFacebook" class="form-control">
                         </div>
                         
                         <div class="form-group">
                             <label for="socialInstagram">Instagram URL</label>
-                            <input type="url" id="socialInstagram" name="socialInstagram" class="form-control" value="<%= settings.socialInstagram %>">
+                            <input type="url" id="socialInstagram" name="socialInstagram" class="form-control">
                         </div>
                         
                         <div class="form-group">
                             <label for="socialTwitter">Twitter URL</label>
-                            <input type="url" id="socialTwitter" name="socialTwitter" class="form-control" value="<%= settings.socialTwitter %>">
+                            <input type="url" id="socialTwitter" name="socialTwitter" class="form-control">
                         </div>
                     </div>
                     
@@ -235,12 +244,12 @@
                         <h3>Content</h3>
                         <div class="form-group">
                             <label for="aboutText">About Text</label>
-                            <textarea id="aboutText" name="aboutText" class="form-control" rows="4"><%= settings.aboutText %></textarea>
+                            <textarea id="aboutText" name="aboutText" class="form-control" rows="4"></textarea>
                         </div>
                         
                         <div class="form-group">
                             <label for="footerText">Footer Text</label>
-                            <input type="text" id="footerText" name="footerText" class="form-control" value="<%= settings.footerText %>">
+                            <input type="text" id="footerText" name="footerText" class="form-control">
                         </div>
                     </div>
                     
@@ -248,24 +257,8 @@
                         <h3>Hero Slider Images</h3>
                         <p class="section-description">Manage the images that appear in the homepage slider. Recommended size: 1920x800 pixels.</p>
                         
-                        <div class="hero-slides-container">
-                            <% for(let i = 0; i < 6; i++) { %>
-                                <div class="hero-slide-item">
-                                    <div class="slide-number">Slide <%= i+1 %></div>
-                                    <div class="slide-preview">
-                                        <% if(settings.heroSlides && settings.heroSlides[i]) { %>
-                                            <img src="<%= settings.heroSlides[i] %>" alt="Slide <%= i+1 %>">
-                                        <% } else { %>
-                                            <div class="no-image">No image</div>
-                                        <% } %>
-                                    </div>
-                                    <div class="slide-actions">
-                                        <a href="/admin/settings/slide/<%= i %>" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-edit"></i> Change Image
-                                        </a>
-                                    </div>
-                                </div>
-                            <% } %>
+                        <div class="hero-slides-container" id="hero-slides-container">
+                            <!-- Hero slides will be loaded dynamically -->
                         </div>
                     </div>
                     
@@ -282,6 +275,15 @@
     <script src="/js/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Load settings
+            loadSettings();
+            
+            // Check for success/error messages in URL
+            checkMessages();
+            
             const form = document.querySelector('form');
             const saveBtn = form.querySelector('button[type="submit"]');
             
@@ -289,11 +291,101 @@
                 saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
                 saveBtn.disabled = true;
             });
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to load settings
+        function loadSettings() {
+            console.log('Loading settings...');
+            fetch('/api/admin/settings')
+                .then(response => {
+                    console.log('Settings response status:', response.status);
+                    if (!response.ok) {
+                        // Try alternative endpoint
+                        console.log('First endpoint failed, trying second endpoint');
+                        return fetch('/admin/api/settings');
+                    }
+                    return response;
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load settings');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Settings data received:', data);
+                    populateForm(data.settings);
+                    renderHeroSlides(data.settings);
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                    showMessage('error', 'Failed to load settings');
+                });
+        }
+        
+        // Function to populate form with settings data
+        function populateForm(settings) {
+            document.getElementById('siteName').value = settings.siteName || '';
+            document.getElementById('siteTagline').value = settings.siteTagline || '';
+            document.getElementById('contactEmail').value = settings.contactEmail || '';
+            document.getElementById('contactPhone').value = settings.contactPhone || '';
+            document.getElementById('contactAddress').value = settings.contactAddress || '';
+            document.getElementById('socialFacebook').value = settings.socialFacebook || '';
+            document.getElementById('socialInstagram').value = settings.socialInstagram || '';
+            document.getElementById('socialTwitter').value = settings.socialTwitter || '';
+            document.getElementById('aboutText').value = settings.aboutText || '';
+            document.getElementById('footerText').value = settings.footerText || '';
+        }
+        
+        // Function to render hero slides
+        function renderHeroSlides(settings) {
+            const container = document.getElementById('hero-slides-container');
+            let html = '';
             
-            // If there's a success message, scroll to it
-            const successMessage = document.querySelector('.success-message');
-            if (successMessage) {
-                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            for (let i = 0; i < 6; i++) {
+                html += `
+                    <div class="hero-slide-item">
+                        <div class="slide-number">Slide ${i+1}</div>
+                        <div class="slide-preview">
+                            ${settings.heroSlides && settings.heroSlides[i] 
+                                ? `<img src="${settings.heroSlides[i]}" alt="Slide ${i+1}">`
+                                : `<div class="no-image">No image</div>`
+                            }
+                        </div>
+                        <div class="slide-actions">
+                            <a href="/admin/settings/slide/${i}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-edit"></i> Change Image
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+            
+            if (message) {
+                showMessage('success', decodeURIComponent(message));
                 
                 // Highlight the fields that were updated
                 setTimeout(() => {
@@ -308,7 +400,32 @@
                     });
                 }, 500);
             }
-        });
+            
+            if (error) {
+                showMessage('error', decodeURIComponent(error));
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
+            
+            // If there's a success message, scroll to it
+            if (type === 'success') {
+                const successMessage = document.querySelector('.success-message');
+                if (successMessage) {
+                    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
     </script>
 </body>
 </html>

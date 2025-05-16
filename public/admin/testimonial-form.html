@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testimonial Form - Dignity Kitchen</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e1e5eb;
+            border-radius: 5px;
+            font-size: 15px;
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+            outline: none;
+        }
+        
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .rating-select {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .rating-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .rating-option input {
+            margin: 0;
+        }
+        
+        .rating-option .stars {
+            color: #FFD700;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-left: 35px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 22px;
+            width: 22px;
+            background-color: #fff;
+            border: 2px solid #e1e5eb;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        
+        .checkbox-container:hover input ~ .checkmark {
+            border-color: var(--secondary-color);
+        }
+        
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-container .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .form-text {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            max-width: 150px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn-cancel {
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            border: 1px solid #e1e5eb;
+        }
+        
+        .btn-cancel:hover {
+            background-color: #e9ecef;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-message {
+            background-color: #f0fff4;
+            color: #38a169;
+            border-left: 4px solid #38a169;
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            color: #e53e3e;
+            border-left: 4px solid #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li class="active"><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <header class="admin-header">
+                <h1 id="page-title">Add New Testimonial</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                </div>
+            </header>
+            
+            <div id="message-container"></div>
+            
+            <div class="form-container">
+                <form id="testimonial-form" action="/admin/testimonials/add" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="name">Client Name *</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="position">Position *</label>
+                        <input type="text" id="position" name="position" class="form-control" required>
+                        <small class="form-text">E.g., Executive Chef, Restaurant Owner, etc.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="company">Company/Business (Optional)</label>
+                        <input type="text" id="company" name="company" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="content">Testimonial Content *</label>
+                        <textarea id="content" name="content" class="form-control" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Rating *</label>
+                        <div class="rating-select" id="rating-select">
+                            <!-- Rating options will be generated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="image">Client Photo (Optional)</label>
+                        <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                        <small class="form-text">Recommended size: 200x200 pixels. Square images work best.</small>
+                        <div id="image-preview-container"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="featured" name="featured">
+                            <span class="checkmark"></span>
+                            Feature this testimonial on homepage
+                        </label>
+                        <small class="form-text">Featured testimonials will be displayed in the homepage testimonials section</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary-btn" id="submit-btn">
+                            <i class="fas fa-save"></i> Save Testimonial
+                        </button>
+                        <a href="/admin/testimonials" class="btn btn-cancel">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Generate rating options
+            generateRatingOptions();
+            
+            // Get testimonial ID from URL if it exists (for edit mode)
+            const pathParts = window.location.pathname.split('/');
+            const isEdit = pathParts.includes('edit');
+            const testimonialId = isEdit ? pathParts[pathParts.length - 1] : null;
+            
+            // Set form action and page title based on whether we're adding or editing
+            const form = document.getElementById('testimonial-form');
+            const pageTitle = document.getElementById('page-title');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            if (isEdit) {
+                form.action = `/admin/testimonials/edit/${testimonialId}`;
+                pageTitle.textContent = 'Edit Testimonial';
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Testimonial';
+                
+                // Load testimonial data
+                loadTestimonialData(testimonialId);
+            }
+            
+            // Preview image before upload
+            document.getElementById('image').addEventListener('change', function(e) {
+                previewImage(e);
+            });
+            
+            // Check for error parameter in URL
+            checkMessages();
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to generate rating options
+        function generateRatingOptions() {
+            const ratingSelect = document.getElementById('rating-select');
+            let html = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                html += `
+                    <label class="rating-option">
+                        <input type="radio" name="rating" value="${i}" ${i === 5 ? 'checked' : ''}>
+                        <span class="stars">
+                            ${getRatingStars(i)}
+                        </span>
+                    </label>
+                `;
+            }
+            
+            ratingSelect.innerHTML = html;
+        }
+        
+        // Function to get rating stars HTML
+        function getRatingStars(rating) {
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    starsHtml += '<i class="fas fa-star"></i>';
+                } else {
+                    starsHtml += '<i class="far fa-star"></i>';
+                }
+            }
+            return starsHtml;
+        }
+        
+        // Function to load testimonial data for editing
+        function loadTestimonialData(testimonialId) {
+            // Try multiple endpoints in sequence
+            fetch(`/api/admin/testimonials/${testimonialId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        // If first endpoint fails, try the second one
+                        return fetch(`/admin/api/testimonials/${testimonialId}`);
+                    }
+                    return response;
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load testimonial');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const testimonial = data.testimonial;
+                    
+                    // Populate form fields
+                    document.getElementById('name').value = testimonial.name || '';
+                    document.getElementById('position').value = testimonial.position || '';
+                    document.getElementById('company').value = testimonial.company || '';
+                    document.getElementById('content').value = testimonial.content || '';
+                    
+                    // Set rating
+                    const ratingInputs = document.querySelectorAll('input[name="rating"]');
+                    ratingInputs.forEach(input => {
+                        if (parseInt(input.value) === testimonial.rating) {
+                            input.checked = true;
+                        }
+                    });
+                    
+                    // Set featured checkbox
+                    document.getElementById('featured').checked = testimonial.featured || false;
+                    
+                    // Show current image preview if it exists
+                    if (testimonial.imageUrl) {
+                        const previewContainer = document.getElementById('image-preview-container');
+                        const preview = document.createElement('div');
+                        preview.className = 'image-preview';
+                        preview.innerHTML = `
+                            <img src="${testimonial.imageUrl}" alt="${testimonial.name}">
+                            <small class="form-text">Current photo. Upload a new one to replace it.</small>
+                        `;
+                        previewContainer.appendChild(preview);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading testimonial data:', error);
+                    showMessage('error', 'Failed to load testimonial');
+                });
+        }
+        
+        // Function to preview image before upload
+        function previewImage(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const previewContainer = document.getElementById('image-preview-container');
+                    previewContainer.innerHTML = ''; // Clear previous preview
+                    
+                    const preview = document.createElement('div');
+                    preview.className = 'image-preview';
+                    preview.innerHTML = `
+                        <img src="${event.target.result}" alt="Image preview">
+                        <small class="form-text">Image preview</small>
+                    `;
+                    previewContainer.appendChild(preview);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            
+            if (error) {
+                showMessage('error', decodeURIComponent(error));
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
+        }
+    </script>
+</body>
+</html>

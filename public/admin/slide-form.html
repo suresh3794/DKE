@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Slide - Dignity Kitchen</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .btn-container {
+            display: flex;
+            justify-content: flex-start;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .form-text {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            max-width: 100%;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 3px;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-message {
+            background-color: #f0fff4;
+            color: #38a169;
+            border-left: 4px solid #38a169;
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            color: #e53e3e;
+            border-left: 4px solid #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li class="active"><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <header class="admin-header">
+                <h1 id="page-title">Edit Hero Slide</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                </div>
+            </header>
+            
+            <div id="message-container"></div>
+            
+            <div class="form-container">
+                <form id="slide-form" action="" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="image">Slide Image</label>
+                        <input type="file" id="image" name="image" class="form-control" required accept="image/*">
+                        <small class="form-text">Recommended size: 1920x800 pixels. Landscape orientation works best.</small>
+                        
+                        <div id="current-image-container"></div>
+                    </div>
+                    
+                    <div class="btn-container">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Slide
+                        </button>
+                        <a href="/admin/settings" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Get slide index from URL
+            const slideIndex = getSlideIndex();
+            
+            // Set page title
+            document.getElementById('page-title').textContent = `Edit Hero Slide ${slideIndex + 1}`;
+            
+            // Set form action
+            document.getElementById('slide-form').action = `/admin/settings/slide/${slideIndex}`;
+            
+            // Load current slide image
+            loadCurrentImage(slideIndex);
+            
+            // Check for success/error messages in URL
+            checkMessages();
+            
+            // Preview image before upload
+            document.getElementById('image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        let preview = document.querySelector('.image-preview');
+                        if (!preview) {
+                            preview = document.createElement('div');
+                            preview.className = 'image-preview';
+                            const img = document.createElement('img');
+                            preview.appendChild(img);
+                            const small = document.createElement('small');
+                            small.className = 'form-text';
+                            small.textContent = 'Image preview';
+                            preview.appendChild(small);
+                            e.target.parentNode.appendChild(preview);
+                        }
+                        preview.querySelector('img').src = event.target.result;
+                        if (preview.querySelector('small')) {
+                            preview.querySelector('small').textContent = 'Image preview';
+                        }
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to get slide index from URL
+        function getSlideIndex() {
+            const path = window.location.pathname;
+            const parts = path.split('/');
+            const slideIndex = parseInt(parts[parts.length - 1]);
+            
+            if (isNaN(slideIndex) || slideIndex < 0 || slideIndex > 5) {
+                window.location.href = '/admin/settings?error=Invalid slide index';
+                return 0;
+            }
+            
+            return slideIndex;
+        }
+        
+        // Function to load current slide image
+        function loadCurrentImage(slideIndex) {
+            fetch('/api/admin/settings')
+                .then(response => {
+                    if (!response.ok) {
+                        // Try alternative endpoint
+                        console.log('First endpoint failed, trying second endpoint');
+                        return fetch('/admin/api/settings');
+                    }
+                    return response;
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load settings');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const settings = data.settings;
+                    const currentImage = settings.heroSlides && settings.heroSlides[slideIndex] ? settings.heroSlides[slideIndex] : '';
+                    
+                    if (currentImage) {
+                        const previewContainer = document.getElementById('current-image-container');
+                        previewContainer.innerHTML = `
+                            <div class="current-image">
+                                <img src="${currentImage}" alt="Current Slide Image">
+                                <p>Current slide image. Upload a new one to replace it.</p>
+                            </div>
+                        `;
+                        
+                        // Store the current image URL in a hidden field
+                        const hiddenField = document.createElement('input');
+                        hiddenField.type = 'hidden';
+                        hiddenField.name = 'currentImage';
+                        hiddenField.value = currentImage;
+                        document.getElementById('slide-form').appendChild(hiddenField);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading current image:', error);
+                    showMessage('error', 'Failed to load current slide image');
+                });
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+            
+            if (message) {
+                showMessage('success', decodeURIComponent(message));
+            }
+            
+            if (error) {
+                showMessage('error', decodeURIComponent(error));
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
+        }
+    </script>
+</body>
+</html>

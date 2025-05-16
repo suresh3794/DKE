@@ -246,19 +246,7 @@
                 </div>
             </header>
             
-            <% if (typeof message !== 'undefined' && message) { %>
-                <div class="message success-message">
-                    <i class="fas fa-check-circle"></i>
-                    <%= message %>
-                </div>
-            <% } %>
-            
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="message error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <%= error %>
-                </div>
-            <% } %>
+            <div id="message-container"></div>
             
             <div class="add-new">
                 <h2>Products</h2>
@@ -281,61 +269,188 @@
                 </select>
             </div>
             
-            <% if (products && products.length > 0) { %>
-                <div class="product-grid">
-                    <% products.forEach(product => { %>
-                        <div class="product-card" data-category="<%= product.category %>" data-featured="<%= product.featured ? 'yes' : 'no' %>">
-                            <div class="product-image">
-                                <img src="<%= product.imageUrl %>" alt="<%= product.name %>">
-                                <% if (product.featured) { %>
-                                    <span class="featured-badge">Featured</span>
-                                <% } %>
-                            </div>
-                            <div class="product-details">
-                                <h3><%= product.name %></h3>
-                                <p><%= product.description %></p>
-                                <div class="product-meta">
-                                    <span class="product-category"><%= product.category %></span>
-                                </div>
-                                <div class="product-actions">
-                                    <a href="/admin/products/edit/<%= product._id %>" class="action-btn edit-btn">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    <form action="/admin/products/delete/<%= product._id %>" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
-                                        <button type="submit" class="action-btn delete-btn">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    <% }); %>
+            <div id="products-container">
+                <!-- Products will be loaded here -->
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading products...
                 </div>
-            <% } else { %>
-                <div class="empty-state">
-                    <i class="fas fa-box-open"></i>
-                    <h3>No Products Yet</h3>
-                    <p>Start by adding your first product</p>
-                    <a href="/admin/products/add" class="add-btn">
-                        <i class="fas fa-plus"></i> Add New Product
-                    </a>
-                </div>
-            <% } %>
+            </div>
         </main>
     </div>
 
     <script src="/js/admin.js"></script>
     <script>
-        // Category filtering
-        document.getElementById('category-filter').addEventListener('change', function() {
-            filterProducts();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Load products
+            loadProducts();
+            
+            // Check for success/error messages in URL
+            checkMessages();
+            
+            // Set up event listeners for filters
+            document.getElementById('category-filter').addEventListener('change', filterProducts);
+            document.getElementById('featured-filter').addEventListener('change', filterProducts);
         });
         
-        // Featured filtering
-        document.getElementById('featured-filter').addEventListener('change', function() {
-            filterProducts();
-        });
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
         
+        // Function to load products
+        function loadProducts() {
+            console.log('Loading products...');
+            
+            fetch('/api/products-list')
+                .then(response => {
+                    console.log('Products response:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Failed to load products');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Products data:', data);
+                    renderProducts(data.products);
+                })
+                .catch(error => {
+                    console.error('Error loading products:', error);
+                    showMessage('error', `Failed to load products: ${error.message}`);
+                    
+                    // Try fallback endpoint
+                    console.log('Trying fallback endpoint...');
+                    fetch('/api/fallback-products')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Fallback also failed');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Fallback data:', data);
+                            renderProducts(data.products);
+                        })
+                        .catch(fallbackError => {
+                            console.error('Fallback error:', fallbackError);
+                            // Show empty state
+                            document.getElementById('products-container').innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <h3>Error Loading Products</h3>
+                                    <p>${error.message}</p>
+                                    <button onclick="loadProducts()" class="btn">Try Again</button>
+                                </div>
+                            `;
+                        });
+                });
+        }
+        
+        // Function to try multiple endpoints until one works
+        function tryMultipleEndpoints(endpoints) {
+            // Add the fallback endpoint to the end of the list
+            const allEndpoints = [...endpoints, '/api/fallback-products'];
+            
+            if (allEndpoints.length === 0) {
+                throw new Error('All endpoints failed');
+            }
+            
+            const endpoint = allEndpoints[0];
+            console.log('Trying endpoint:', endpoint);
+            
+            return fetch(endpoint)
+                .then(response => {
+                    console.log(`Response from ${endpoint}:`, response.status);
+                    
+                    if (!response.ok) {
+                        // If this endpoint fails, try the next one
+                        console.log(`Endpoint ${endpoint} failed, trying next one`);
+                        return tryMultipleEndpoints(allEndpoints.slice(1));
+                    }
+                    
+                    // Check if the response is JSON
+                    const contentType = response.headers.get('content-type');
+                    console.log(`Content-Type from ${endpoint}:`, contentType);
+                    
+                    if (!contentType || !contentType.includes('application/json')) {
+                        console.log(`Endpoint ${endpoint} returned non-JSON response, trying next one`);
+                        return tryMultipleEndpoints(allEndpoints.slice(1));
+                    }
+                    
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error(`Error with endpoint ${endpoint}:`, error);
+                    // If this endpoint throws an error, try the next one
+                    return tryMultipleEndpoints(allEndpoints.slice(1));
+                });
+        }
+        
+        // Function to render products
+        function renderProducts(products) {
+            console.log('Rendering products:', products);
+            const container = document.getElementById('products-container');
+            
+            if (!products || products.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h3>No Products Yet</h3>
+                        <p>Start by adding your first product</p>
+                        <a href="/admin/products/add" class="add-btn">
+                            <i class="fas fa-plus"></i> Add New Product
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="product-grid">';
+            
+            products.forEach(product => {
+                html += `
+                    <div class="product-card" data-category="${product.category}" data-featured="${product.featured ? 'yes' : 'no'}">
+                        <div class="product-image">
+                            <img src="${product.imageUrl}" alt="${product.name}">
+                            ${product.featured ? '<span class="featured-badge">Featured</span>' : ''}
+                        </div>
+                        <div class="product-details">
+                            <h3>${product.name}</h3>
+                            <p>${product.description}</p>
+                            <div class="product-meta">
+                                <span class="product-category">${product.category}</span>
+                            </div>
+                            <div class="product-actions">
+                                <a href="/admin/products/edit/${product._id}" class="action-btn edit-btn">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <form action="/admin/products/delete/${product._id}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                    <button type="submit" class="action-btn delete-btn">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Function to filter products
         function filterProducts() {
             const category = document.getElementById('category-filter').value;
             const featured = document.getElementById('featured-filter').value;
@@ -360,6 +475,39 @@
                     product.style.display = 'none';
                 }
             });
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+            
+            if (message) {
+                showMessage('success', decodeURIComponent(message));
+            }
+            
+            if (error) {
+                showMessage('error', decodeURIComponent(error));
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            if (!messageContainer) {
+                console.error('Message container not found');
+                return;
+            }
+            
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
         }
     </script>
 </body>

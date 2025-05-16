@@ -74,3 +74,67 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 });
+
+/**
+ * Loads a component (header, footer, etc.) into the specified target element
+ * and properly executes any scripts contained within the component.
+ * 
+ * @param {string} component - The name of the component to load (e.g., 'header', 'footer')
+ * @param {string} targetId - The ID of the element to load the component into
+ * @param {Object} data - Additional data to pass to the component
+ */
+function loadComponent(component, targetId, data = {}) {
+    console.log(`Loading component: ${component}`);
+    fetch(`/components/${component}.html`)
+        .then(response => response.text())
+        .then(html => {
+            // Insert the HTML
+            document.getElementById(targetId).innerHTML = html;
+            
+            // Find and execute scripts
+            const scripts = document.getElementById(targetId).getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                const script = scripts[i];
+                const scriptClone = document.createElement('script');
+                
+                // Copy attributes
+                for (let j = 0; j < script.attributes.length; j++) {
+                    const attr = script.attributes[j];
+                    scriptClone.setAttribute(attr.name, attr.value);
+                }
+                
+                // Copy content
+                scriptClone.textContent = script.textContent;
+                
+                // Replace the original script with the clone to execute it
+                script.parentNode.replaceChild(scriptClone, script);
+            }
+            
+            if (component === 'header') {
+                // Initialize any header-specific JS
+                highlightCurrentPage(data.page);
+            }
+            
+            console.log(`Component loaded and scripts executed: ${component}`);
+        })
+        .catch(error => console.error(`Error loading ${component}:`, error));
+}
+
+/**
+ * Highlights the current page in the navigation menu
+ * 
+ * @param {string} page - The current page identifier
+ */
+function highlightCurrentPage(page) {
+    const menuItems = document.querySelectorAll('.menu li a');
+    menuItems.forEach(item => {
+        const href = item.getAttribute('href');
+        if ((href === '/' && page === 'home') ||
+            (href === '/about' && page === 'about') ||
+            (href === '/products' && page === 'products') ||
+            (href === '/gallery' && page === 'gallery') ||
+            (href === '/contact' && page === 'contact')) {
+            item.parentElement.classList.add('active');
+        }
+    });
+}

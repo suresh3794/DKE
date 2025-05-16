@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Dignity Kitchen</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li class="active"><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <p>Welcome to your admin dashboard</p>
+            </div>
+            
+            <div id="error-container"></div>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>Products</h3>
+                        <p id="productCount">Loading...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-images"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>Gallery Items</h3>
+                        <p id="galleryCount">Loading...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-quote-right"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>Testimonials</h3>
+                        <p id="testimonialCount">Loading...</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>New Messages</h3>
+                        <p id="newMessageCount">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h2>Recent Activity</h2>
+                <div class="activity-list">
+                    <!-- Activity items will be loaded dynamically -->
+                    <div class="activity-item">
+                        <span class="activity-time">Today, 10:30 AM</span>
+                        <p>New gallery image uploaded: "Commercial Kitchen Installation"</p>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-time">Yesterday, 3:45 PM</span>
+                        <p>New contact form submission from John Smith</p>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-time">Yesterday, 11:20 AM</span>
+                        <p>Product updated: "Industrial Refrigeration Unit"</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Load dashboard data
+            loadDashboardData();
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to load dashboard data
+        function loadDashboardData() {
+            fetch('/api/admin/dashboard')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load dashboard data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update dashboard stats
+                    document.getElementById('productCount').textContent = data.productCount;
+                    document.getElementById('galleryCount').textContent = data.galleryCount;
+                    document.getElementById('testimonialCount').textContent = data.testimonialCount;
+                    document.getElementById('newMessageCount').textContent = data.newMessageCount;
+                    
+                    // You could also update recent activity here if you have that data
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard data:', error);
+                    document.getElementById('error-container').innerHTML = `
+                        <div class="error-message">
+                            Error loading dashboard data. Please try refreshing the page.
+                        </div>
+                    `;
+                    
+                    // Set default values
+                    document.getElementById('productCount').textContent = '0';
+                    document.getElementById('galleryCount').textContent = '0';
+                    document.getElementById('testimonialCount').textContent = '0';
+                    document.getElementById('newMessageCount').textContent = '0';
+                });
+        }
+    </script>
+</body>
+</html>

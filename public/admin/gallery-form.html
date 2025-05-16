@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery Item - Dignity Kitchen</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e1e5eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            max-width: 300px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #555;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e5e5;
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            color: var(--accent-color);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="/images/logo.png" alt="Dignity Kitchen Logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li class="active"><a href="/admin/gallery"><i class="fas fa-images"></i> Gallery</a></li>
+                    <li><a href="/admin/products"><i class="fas fa-box"></i> Products</a></li>
+                    <li><a href="/admin/testimonials"><i class="fas fa-quote-right"></i> Testimonials</a></li>
+                    <li><a href="/admin/contacts"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                    <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <header class="admin-header">
+                <h1 id="page-title">Gallery Item</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                </div>
+            </header>
+            
+            <div id="error-container" style="display: none;" class="error-message"></div>
+            
+            <div class="form-container">
+                <form id="gallery-form" action="" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" class="form-control" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" class="form-control" required>
+                            <option value="">Select a category</option>
+                            <option value="installations">Installations</option>
+                            <option value="products">Products</option>
+                            <option value="events">Events</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="productCategoryGroup" style="display: none;">
+                        <label for="productCategory">Product Category</label>
+                        <select id="productCategory" name="productCategory" class="form-control">
+                            <option value="">Select a product category</option>
+                            <option value="cooking">Cooking Equipment</option>
+                            <option value="refrigeration">Refrigeration</option>
+                            <option value="preparation">Food Preparation</option>
+                            <option value="storage">Storage Solutions</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="image" id="image-label">Image</label>
+                        <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                        
+                        <div id="image-preview-container"></div>
+                    </div>
+                    
+                    <div class="btn-container">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> <span id="submit-text">Save</span> Item
+                        </button>
+                        <a href="/admin/gallery" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Get item ID from URL if it exists
+            const pathParts = window.location.pathname.split('/');
+            const isEdit = pathParts.includes('edit');
+            const itemId = isEdit ? pathParts[pathParts.length - 1] : null;
+            
+            // Set form action and page title based on whether we're adding or editing
+            const form = document.getElementById('gallery-form');
+            const pageTitle = document.getElementById('page-title');
+            const submitText = document.getElementById('submit-text');
+            
+            if (isEdit) {
+                form.action = `/admin/gallery/edit/${itemId}`;
+                pageTitle.textContent = 'Edit Gallery Item';
+                submitText.textContent = 'Update';
+                
+                // Load item data
+                loadItemData(itemId);
+            } else {
+                form.action = '/admin/gallery/add';
+                pageTitle.textContent = 'Add New Gallery Item';
+                submitText.textContent = 'Save';
+                
+                // Set image as required for new items
+                document.getElementById('image').setAttribute('required', 'required');
+            }
+            
+            // Check for error parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            
+            if (error) {
+                showError(decodeURIComponent(error));
+            }
+            
+            // Set up event listener for category change
+            document.getElementById('category').addEventListener('change', function() {
+                const productCategoryGroup = document.getElementById('productCategoryGroup');
+                const productCategorySelect = document.getElementById('productCategory');
+                
+                if (this.value === 'products') {
+                    productCategoryGroup.style.display = 'block';
+                    productCategorySelect.setAttribute('required', 'required');
+                } else {
+                    productCategoryGroup.style.display = 'none';
+                    productCategorySelect.removeAttribute('required');
+                    productCategorySelect.value = '';
+                }
+            });
+            
+            // Preview image before upload
+            document.getElementById('image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        let preview = document.querySelector('.image-preview');
+                        if (!preview) {
+                            preview = document.createElement('div');
+                            preview.className = 'image-preview';
+                            const img = document.createElement('img');
+                            preview.appendChild(img);
+                            document.getElementById('image-preview-container').innerHTML = '';
+                            document.getElementById('image-preview-container').appendChild(preview);
+                        }
+                        preview.querySelector('img').src = event.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to load item data for editing
+        function loadItemData(itemId) {
+            fetch(`/api/admin/gallery/${itemId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load gallery item');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const item = data.item;
+                    
+                    // Fill form fields with item data
+                    document.getElementById('title').value = item.title || '';
+                    document.getElementById('description').value = item.description || '';
+                    document.getElementById('category').value = item.category || '';
+                    
+                    // Trigger category change event to show/hide product category
+                    const categoryEvent = new Event('change');
+                    document.getElementById('category').dispatchEvent(categoryEvent);
+                    
+                    if (item.category === 'products' && item.productCategory) {
+                        document.getElementById('productCategory').value = item.productCategory;
+                    }
+                    
+                    // Update image label
+                    document.getElementById('image-label').textContent = 'Image (leave empty to keep current image)';
+                    
+                    // Show current image preview if it exists
+                    if (item.imageUrl) {
+                        const previewContainer = document.getElementById('image-preview-container');
+                        const preview = document.createElement('div');
+                        preview.className = 'image-preview';
+                        preview.innerHTML = `<img src="${item.imageUrl}" alt="${item.title}">`;
+                        previewContainer.appendChild(preview);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading item data:', error);
+                    showError('Failed to load gallery item');
+                });
+        }
+        
+        // Function to show error message
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

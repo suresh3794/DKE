@@ -222,19 +222,7 @@
                 </div>
             </header>
             
-            <% if (typeof message !== 'undefined' && message) { %>
-                <div class="message success-message">
-                    <i class="fas fa-check-circle"></i>
-                    <%= message %>
-                </div>
-            <% } %>
-            
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="message error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <%= error %>
-                </div>
-            <% } %>
+            <div id="message-container"></div>
             
             <div class="add-new">
                 <h2>Gallery Items</h2>
@@ -255,61 +243,119 @@
                 </select>
             </div>
             
-            <% if (galleryItems && galleryItems.length > 0) { %>
-                <div class="gallery-grid">
-                    <% galleryItems.forEach(item => { %>
-                        <div class="gallery-item" data-category="<%= item.category %>">
-                            <div class="gallery-image">
-                                <img src="<%= item.imageUrl %>" alt="<%= item.title %>">
-                            </div>
-                            <div class="gallery-details">
-                                <span class="gallery-category"><%= item.category %></span>
-                                <% if (item.category === 'products' && item.productCategory) { %>
-                                    <span class="gallery-subcategory"><%= item.productCategory %></span>
-                                <% } %>
-                                <h3><%= item.title %></h3>
-                                <p><%= item.description %></p>
-                                <small>Added: <%= item.createdAt.toLocaleDateString() %></small>
-                                <div class="gallery-actions">
-                                    <a href="/admin/gallery/edit/<%= item._id %>" class="action-btn edit-btn">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    <form action="/admin/gallery/delete/<%= item._id %>" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this item?');">
-                                        <button type="submit" class="action-btn delete-btn">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    <% }); %>
+            <div id="gallery-container">
+                <!-- Gallery items will be loaded here -->
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading gallery items...
                 </div>
-            <% } else { %>
-                <div class="empty-state">
-                    <i class="fas fa-images"></i>
-                    <h3>No Gallery Items Yet</h3>
-                    <p>Start by adding your first gallery item</p>
-                    <a href="/admin/gallery/add" class="add-btn">
-                        <i class="fas fa-plus"></i> Add New Item
-                    </a>
-                </div>
-            <% } %>
+            </div>
         </main>
     </div>
 
     <script src="/js/admin.js"></script>
-    <script src="/js/gallery.js"></script>
     <script>
-        // Category filtering
-        document.getElementById('category-filter').addEventListener('change', function() {
-            filterGallery();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Load gallery items
+            loadGalleryItems();
+            
+            // Check for success/error messages in URL
+            checkMessages();
+            
+            // Set up event listeners for filters
+            document.getElementById('category-filter').addEventListener('change', filterGallery);
+            document.getElementById('sort-filter').addEventListener('change', sortGallery);
         });
         
-        // Sort filtering
-        document.getElementById('sort-filter').addEventListener('change', function() {
-            sortGallery();
-        });
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
         
+        // Function to load gallery items
+        function loadGalleryItems() {
+            fetch('/api/gallery-items')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load gallery items');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderGalleryItems(data.galleryItems);
+                })
+                .catch(error => {
+                    console.error('Error loading gallery items:', error);
+                    showMessage('error', 'Failed to load gallery items');
+                });
+        }
+        
+        // Function to render gallery items
+        function renderGalleryItems(galleryItems) {
+            const container = document.getElementById('gallery-container');
+            
+            if (!galleryItems || galleryItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-images"></i>
+                        <h3>No Gallery Items Yet</h3>
+                        <p>Start by adding your first gallery item</p>
+                        <a href="/admin/gallery/add" class="add-btn">
+                            <i class="fas fa-plus"></i> Add New Item
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="gallery-grid">';
+            
+            galleryItems.forEach(item => {
+                const date = new Date(item.createdAt).toLocaleDateString();
+                
+                html += `
+                    <div class="gallery-item" data-category="${item.category}">
+                        <div class="gallery-image">
+                            <img src="${item.imageUrl}" alt="${item.title}">
+                        </div>
+                        <div class="gallery-details">
+                            <span class="gallery-category">${item.category}</span>
+                            ${item.category === 'products' && item.productCategory ? 
+                                `<span class="gallery-subcategory">${item.productCategory}</span>` : ''}
+                            <h3>${item.title}</h3>
+                            <p>${item.description}</p>
+                            <small>Added: ${date}</small>
+                            <div class="gallery-actions">
+                                <a href="/admin/gallery/edit/${item._id}" class="action-btn edit-btn">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <form action="/admin/gallery/delete/${item._id}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this item?');">
+                                    <button type="submit" class="action-btn delete-btn">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Function to filter gallery by category
         function filterGallery() {
             const category = document.getElementById('category-filter').value;
             const items = document.querySelectorAll('.gallery-item');
@@ -323,9 +369,13 @@
             });
         }
         
+        // Function to sort gallery items
         function sortGallery() {
             const sortOrder = document.getElementById('sort-filter').value;
             const grid = document.querySelector('.gallery-grid');
+            
+            if (!grid) return;
+            
             const items = Array.from(grid.querySelectorAll('.gallery-item'));
             
             items.sort((a, b) => {
@@ -340,6 +390,34 @@
             
             // Add sorted items
             items.forEach(item => grid.appendChild(item));
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+            
+            if (message) {
+                showMessage('success', message);
+            }
+            
+            if (error) {
+                showMessage('error', error);
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
         }
     </script>
 </body>

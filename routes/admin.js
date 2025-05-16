@@ -1,14 +1,19 @@
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
-const Setting = require('../models/Setting');
-const Product = require('../models/Product');
-const Gallery = require('../models/Gallery');
-const Testimonial = require('../models/Testimonial');
-const User = require('../models/User');
-const Contact = require('../models/Contact');
+const Setting = mongoose.model('Setting');
+const Product = mongoose.model('Product');
+const Gallery = mongoose.model('Gallery');
+const Testimonial = mongoose.model('Testimonial');
+const User = mongoose.model('User');
+const Contact = mongoose.model('Contact');
+
+// Add this at the top of your file, after requiring mongoose
+console.log('Product model:', typeof Product);
+console.log('Product schema:', Product.schema ? 'defined' : 'undefined');
 
 // Import Cloudinary configuration
 const { 
@@ -28,14 +33,19 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // Admin dashboard
-router.get('/', isAuthenticated, async (req, res) => {
+router.get('/', isAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin/dashboard.html'));
+});
+
+// API endpoint for dashboard data
+router.get('/api/admin/dashboard', isAuthenticated, async (req, res) => {
   try {
     const productCount = await Product.countDocuments();
     const galleryCount = await Gallery.countDocuments();
     const testimonialCount = await Testimonial.countDocuments();
     const newMessageCount = await Contact.countDocuments({ status: 'new' });
     
-    res.render('admin/dashboard', {
+    res.json({
       productCount,
       galleryCount,
       testimonialCount,
@@ -43,7 +53,7 @@ router.get('/', isAuthenticated, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).render('admin/dashboard', { 
+    res.status(500).json({ 
       error: 'Error loading dashboard data',
       productCount: 0,
       galleryCount: 0,
@@ -53,12 +63,21 @@ router.get('/', isAuthenticated, async (req, res) => {
   }
 });
 
+// Check if user is authenticated (for AJAX requests)
+router.get('/check-auth', (req, res) => {
+  if (req.session && req.session.isAuthenticated) {
+    res.status(200).send('Authenticated');
+  } else {
+    res.status(401).send('Not authenticated');
+  }
+});
+
 // Login page
 router.get('/login', (req, res) => {
   if (req.session.userId) {
     return res.redirect('/admin');
   }
-  res.render('admin/login');
+  res.sendFile(path.join(__dirname, '../public/admin/login.html'));
 });
 
 // Login process
@@ -69,7 +88,11 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ username });
     
     if (!user || user.password !== password) {
-      return res.render('admin/login', { error: 'Invalid username or password' });
+      // Check if request expects JSON
+      if (req.headers['content-type'] === 'application/json') {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+      return res.redirect('/admin/login?error=' + encodeURIComponent('Invalid username or password'));
     }
     
     // Set session variables
@@ -80,13 +103,24 @@ router.post('/login', async (req, res) => {
     req.session.save((err) => {
       if (err) {
         console.error('Session save error:', err);
-        return res.render('admin/login', { error: 'Login failed' });
+        if (req.headers['content-type'] === 'application/json') {
+          return res.status(500).json({ error: 'Login failed' });
+        }
+        return res.redirect('/admin/login?error=' + encodeURIComponent('Login failed'));
+      }
+      
+      // Check if request expects JSON
+      if (req.headers['content-type'] === 'application/json') {
+        return res.json({ success: true });
       }
       res.redirect('/admin');
     });
   } catch (err) {
     console.error(err);
-    res.render('admin/login', { error: 'Login failed' });
+    if (req.headers['content-type'] === 'application/json') {
+      return res.status(500).json({ error: 'Login failed' });
+    }
+    res.redirect('/admin/login?error=' + encodeURIComponent('Login failed'));
   }
 });
 
@@ -96,32 +130,54 @@ router.get('/logout', (req, res) => {
   res.redirect('/admin/login');
 });
 
+// API endpoint for gallery items list
+router.get('/api/admin/gallery-items', isAuthenticated, async (req, res) => {
+  try {
+    const galleryItems = await Gallery.find().sort({ createdAt: -1 });
+    res.json({ galleryItems });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load gallery items' });
+  }
+});
+
+// Add this route as well (alternative URL format)
+router.get('/gallery-items', isAuthenticated, async (req, res) => {
+  try {
+    const galleryItems = await Gallery.find().sort({ createdAt: -1 });
+    res.json({ galleryItems });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load gallery items' });
+  }
+});
 // Products management
 router.get('/products', isAuthenticated, async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.render('admin/products', { products });
+    // We'll still fetch products to check if there's an error,
+    // but we won't pass them to the template anymore
+    await Product.find();
+    
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/products.html'));
   } catch (err) {
     console.error(err);
-    res.render('admin/products', { error: 'Failed to load products' });
+    res.sendFile(path.join(__dirname, '../public/admin/products.html'));
   }
 });
 
 // Add product form
-router.get('/products/add', isAuthenticated, (req, res) => {
-  res.render('admin/product-form', { product: null });
+router.get('/products/add', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin/product-form.html'));
 });
 
 // Add product process
-router.post('/products/add', isAuthenticated, productUpload.single('image'), async (req, res) => {
+router.post('/products/add', productUpload.single('image'), async (req, res) => {
   try {
     const { name, description, category, featured } = req.body;
     
     if (!req.file) {
-      return res.render('admin/product-form', { 
-        error: 'Please upload an image',
-        product: req.body
-      });
+      return res.status(400).json({ error: 'Please upload an image' });
     }
     
     const newProduct = new Product({
@@ -137,23 +193,21 @@ router.post('/products/add', isAuthenticated, productUpload.single('image'), asy
     res.redirect('/admin/products?message=Product added successfully');
   } catch (err) {
     console.error(err);
-    res.render('admin/product-form', { 
-      error: 'Failed to add product',
-      product: req.body
-    });
+    res.status(500).json({ error: 'Failed to add product' });
   }
 });
 
 // Edit product form
-router.get('/products/edit/:id', isAuthenticated, async (req, res) => {
+router.get('/products/edit/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
     if (!product) {
       return res.redirect('/admin/products?error=Product not found');
     }
     
-    res.render('admin/product-form', { product });
+    // Instead of rendering a template, send the HTML file
+    // You'll need to fetch the product data on the client side
+    res.sendFile(path.join(__dirname, '../public/admin/product-form.html'));
   } catch (err) {
     console.error(err);
     res.redirect('/admin/products?error=Failed to load product');
@@ -220,24 +274,21 @@ router.post('/products/delete/:id', isAuthenticated, async (req, res) => {
 // Gallery management
 router.get('/gallery', isAuthenticated, async (req, res) => {
   try {
-    const galleryItems = await Gallery.find().sort({ createdAt: -1 });
-    res.render('admin/gallery', { 
-      galleryItems,
-      message: req.query.message,
-      error: req.query.error
-    });
+    // We'll still fetch gallery items to check if there's an error,
+    // but we won't pass them to the template anymore
+    await Gallery.find();
+    
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/gallery.html'));
   } catch (err) {
     console.error(err);
-    res.render('admin/gallery', { error: 'Failed to load gallery items' });
+    res.sendFile(path.join(__dirname, '../public/admin/gallery.html'));
   }
 });
 
 // Add gallery item form
 router.get('/gallery/add', isAuthenticated, (req, res) => {
-  res.render('admin/gallery-form', { 
-    item: {},
-    formAction: '/admin/gallery/add'
-  });
+  res.sendFile(path.join(__dirname, '../public/admin/gallery-form.html'));
 });
 
 // Add gallery item process
@@ -283,10 +334,7 @@ router.get('/gallery/edit/:id', isAuthenticated, async (req, res) => {
       return res.redirect('/admin/gallery?error=Gallery item not found');
     }
     
-    res.render('admin/gallery-form', { 
-      item,
-      formAction: `/admin/gallery/edit/${item._id}`
-    });
+    res.sendFile(path.join(__dirname, '../public/admin/gallery-form.html'));
   } catch (err) {
     console.error(err);
     res.redirect('/admin/gallery?error=Failed to load gallery item');
@@ -353,24 +401,23 @@ router.post('/gallery/delete/:id', isAuthenticated, async (req, res) => {
 // Testimonials management
 router.get('/testimonials', isAuthenticated, async (req, res) => {
   try {
-    const testimonials = await Testimonial.find().sort({ createdAt: -1 });
-    res.render('admin/testimonials', { 
-      testimonials,
-      message: req.query.message,
-      error: req.query.error
-    });
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/testimonials.html'));
   } catch (err) {
     console.error(err);
-    res.render('admin/testimonials', { error: 'Failed to load testimonials' });
+    res.status(500).send('Server error');
   }
 });
 
 // Add testimonial form
 router.get('/testimonials/add', isAuthenticated, (req, res) => {
-  res.render('admin/testimonial-form', { 
-    testimonial: {},
-    formAction: '/admin/testimonials/add'
-  });
+  try {
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/testimonial-form.html'));
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
 });
 
 // Add testimonial process
@@ -404,16 +451,15 @@ router.post('/testimonials/add', isAuthenticated, testimonialUpload.single('imag
 // Edit testimonial form
 router.get('/testimonials/edit/:id', isAuthenticated, async (req, res) => {
   try {
+    // Check if testimonial exists
     const testimonial = await Testimonial.findById(req.params.id);
     
     if (!testimonial) {
       return res.redirect('/admin/testimonials?error=Testimonial not found');
     }
     
-    res.render('admin/testimonial-form', { 
-      testimonial,
-      formAction: `/admin/testimonials/edit/${testimonial._id}`
-    });
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/testimonial-form.html'));
   } catch (err) {
     console.error(err);
     res.redirect('/admin/testimonials?error=Failed to load testimonial');
@@ -485,15 +531,52 @@ router.post('/testimonials/delete/:id', isAuthenticated, async (req, res) => {
 // Contact messages management
 router.get('/contacts', isAuthenticated, async (req, res) => {
   try {
-    const contacts = await Contact.find().sort({ createdAt: -1 });
-    res.render('admin/contacts', { 
-      contacts,
-      message: req.query.message,
-      error: req.query.error
-    });
+    // We'll still fetch contacts to check if there's an error,
+    // but we won't pass them to the template anymore
+    await Contact.find();
+    
+    // Send the HTML file with query parameters for messages
+    const url = new URL('/admin/contacts.html', 'http://localhost');
+    if (req.query.message) url.searchParams.set('message', req.query.message);
+    if (req.query.error) url.searchParams.set('error', req.query.error);
+    
+    res.sendFile(path.join(__dirname, '../public/admin/contacts.html'));
   } catch (err) {
     console.error(err);
-    res.render('admin/contacts', { error: 'Failed to load contact messages' });
+    res.sendFile(path.join(__dirname, '../public/admin/contacts.html'));
+  }
+});
+
+// API endpoint for contacts list
+router.get('/api/contacts', isAuthenticated, async (req, res) => {
+  try {
+    const contacts = await Contact.find().sort({ createdAt: -1 });
+    res.json({ contacts });
+  } catch (err) {
+    console.error('Error in /api/contacts:', err);
+    res.status(500).json({ error: 'Failed to load contact messages' });
+  }
+});
+
+// API endpoint for contact details
+router.get('/api/contacts/:id', isAuthenticated, async (req, res) => {
+  try {
+    const contact = await Contact.findById(req.params.id);
+    
+    if (!contact) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+    
+    // Mark as read if it's new
+    if (contact.status === 'new') {
+      contact.status = 'read';
+      await contact.save();
+    }
+    
+    res.json({ contact });
+  } catch (err) {
+    console.error('Error in /api/contacts/:id:', err);
+    res.status(500).json({ error: 'Failed to load contact details' });
   }
 });
 
@@ -512,7 +595,7 @@ router.get('/contacts/view/:id', isAuthenticated, async (req, res) => {
       await contact.save();
     }
     
-    res.render('admin/contact-detail', { contact });
+    res.sendFile(path.join(__dirname, '../public/admin/contact-detail.html'));
   } catch (err) {
     console.error(err);
     res.redirect('/admin/contacts?error=Failed to load message');
@@ -565,7 +648,7 @@ router.post('/contacts/delete/:id', isAuthenticated, async (req, res) => {
 // Settings management
 router.get('/settings', isAuthenticated, async (req, res) => {
   try {
-    // Get settings or create default if not exists
+    // We'll still check if settings exist, but we won't pass them to the template anymore
     let settings = await Setting.findOne();
     
     if (!settings) {
@@ -573,17 +656,11 @@ router.get('/settings', isAuthenticated, async (req, res) => {
       await settings.save();
     }
     
-    res.render('admin/settings', { 
-      settings,
-      message: req.query.message,
-      error: req.query.error
-    });
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/settings.html'));
   } catch (err) {
     console.error(err);
-    res.render('admin/settings', { 
-      error: 'Failed to load settings',
-      settings: new Setting()
-    });
+    res.sendFile(path.join(__dirname, '../public/admin/settings.html'));
   }
 });
 
@@ -641,24 +718,8 @@ router.get('/settings/slide/:index', isAuthenticated, async (req, res) => {
       return res.redirect('/admin/settings?error=Invalid slide index');
     }
     
-    // Get settings
-    let settings = await Setting.findOne();
-    
-    if (!settings) {
-      settings = new Setting();
-      await settings.save();
-    }
-    
-    const currentImage = settings.heroSlides && settings.heroSlides[slideIndex] 
-      ? settings.heroSlides[slideIndex] 
-      : null;
-    
-    res.render('admin/slide-form', { 
-      slideIndex,
-      currentImage,
-      message: req.query.message,
-      error: req.query.error
-    });
+    // Send the HTML file
+    res.sendFile(path.join(__dirname, '../public/admin/slide-form.html'));
   } catch (err) {
     console.error(err);
     res.redirect('/admin/settings?error=Failed to load slide editor');
@@ -718,6 +779,254 @@ router.post('/settings/slide/:index', isAuthenticated, heroSlideUpload.single('i
   } catch (err) {
     console.error('Error updating slide:', err);
     res.redirect(`/admin/settings/slide/${req.params.index}?error=Failed to update slide`);
+  }
+});
+
+// API endpoint for gallery item details
+router.get('/api/admin/gallery/:id', isAuthenticated, async (req, res) => {
+  try {
+    const item = await Gallery.findById(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ error: 'Gallery item not found' });
+    }
+    
+    res.json({ item });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load gallery item' });
+  }
+});
+
+// API endpoint for gallery items list
+router.get('/api/admin/gallery-items', isAuthenticated, async (req, res) => {
+  try {
+    const galleryItems = await Gallery.find().sort({ createdAt: -1 });
+    res.json({ galleryItems });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load gallery items' });
+  }
+});
+
+// Add this route as well (alternative URL format)
+router.get('/gallery-items', isAuthenticated, async (req, res) => {
+  try {
+    const galleryItems = await Gallery.find().sort({ createdAt: -1 });
+    res.json({ galleryItems });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load gallery items' });
+  }
+});
+
+// API endpoint for products list - version 1
+router.get('/api/products-list', async (req, res) => {
+  try {
+    // Removed authentication for testing
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json({ products });
+  } catch (err) {
+    console.error('Error in /api/products-list:', err);
+    res.status(500).json({ error: 'Failed to load products' });
+  }
+});
+
+// API endpoint for products list - version 2
+router.get('/api/admin/products', async (req, res) => {
+  try {
+    // Removed authentication for testing
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json({ products });
+  } catch (err) {
+    console.error('Error in /api/admin/products:', err);
+    res.status(500).json({ error: 'Failed to load products' });
+  }
+});
+
+// API endpoint for products list - version 3
+router.get('/products-list', async (req, res) => {
+  try {
+    // Removed authentication for testing
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json({ products });
+  } catch (err) {
+    console.error('Error in /products-list:', err);
+    res.status(500).json({ error: 'Failed to load products' });
+  }
+});
+
+// API endpoint for products list - version 4
+router.get('/admin/products-list', async (req, res) => {
+  try {
+    // Removed authentication for testing
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json({ products });
+  } catch (err) {
+    console.error('Error in /admin/products-list:', err);
+    res.status(500).json({ error: 'Failed to load products' });
+  }
+});
+
+// Fallback endpoint with hardcoded products
+router.get('/api/fallback-products', (req, res) => {
+  const fallbackProducts = [
+    {
+      _id: '1',
+      name: 'Fallback Product 1',
+      description: 'This is a fallback product',
+      category: 'cooking',
+      imageUrl: '/images/placeholder.jpg',
+      featured: true
+    },
+    {
+      _id: '2',
+      name: 'Fallback Product 2',
+      description: 'This is another fallback product',
+      category: 'refrigeration',
+      imageUrl: '/images/placeholder.jpg',
+      featured: false
+    }
+  ];
+  
+  res.json({ products: fallbackProducts });
+});
+
+// API endpoint for product details
+router.get('/api/admin/products/:id', isAuthenticated, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    res.json({ product });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load product' });
+  }
+});
+
+// API endpoint for contacts list
+router.get('/api/admin/contacts', isAuthenticated, async (req, res) => {
+  try {
+    const contacts = await Contact.find().sort({ createdAt: -1 });
+    res.json({ contacts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load contacts' });
+  }
+});
+
+// API endpoint for settings - with /api/admin prefix
+router.get('/api/admin/settings', isAuthenticated, async (req, res) => {
+  try {
+    const settings = await Setting.findOne() || {};
+    res.json({ settings });
+  } catch (err) {
+    console.error('Error in /api/admin/settings:', err);
+    res.status(500).json({ error: 'Failed to load settings' });
+  }
+});
+
+// API endpoint for testimonials list
+router.get('/api/testimonials', isAuthenticated, async (req, res) => {
+  try {
+    const testimonials = await Testimonial.find().sort({ createdAt: -1 });
+    res.json({ testimonials });
+  } catch (err) {
+    console.error('Error in /api/testimonials:', err);
+    res.status(500).json({ error: 'Failed to load testimonials' });
+  }
+});
+
+// API endpoint for testimonial details
+router.get('/api/testimonials/:id', isAuthenticated, async (req, res) => {
+  try {
+    const testimonial = await Testimonial.findById(req.params.id);
+    
+    if (!testimonial) {
+      return res.status(404).json({ error: 'Testimonial not found' });
+    }
+    
+    res.json({ testimonial });
+  } catch (err) {
+    console.error('Error in /api/testimonials/:id:', err);
+    res.status(500).json({ error: 'Failed to load testimonial' });
+  }
+});
+
+// Add a simple test endpoint
+router.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
+
+// Add another test endpoint without authentication
+router.get('/test', (req, res) => {
+  res.json({ message: 'Admin route is working!' });
+});
+
+// Debug endpoint - no authentication, no database query
+router.get('/api/debug', (req, res) => {
+  res.json({ status: 'ok', message: 'API is working' });
+});
+
+// Debug endpoint to check Gallery model
+router.get('/api/debug/gallery', async (req, res) => {
+  try {
+    // Check if Gallery model is defined
+    if (!Gallery) {
+      return res.status(500).json({ error: 'Gallery model is not defined' });
+    }
+    
+    // Try to get a count of gallery items
+    const count = await Gallery.countDocuments();
+    
+    // Return debug info
+    res.json({ 
+      status: 'success', 
+      message: 'Gallery model is working',
+      count: count,
+      modelName: Gallery.modelName,
+      collectionName: Gallery.collection.name
+    });
+  } catch (err) {
+    console.error('Debug gallery error:', err);
+    res.status(500).json({ 
+      error: 'Error in debug endpoint', 
+      message: err.message,
+      stack: err.stack
+    });
+  }
+});
+
+// Debug endpoint to check Product model
+router.get('/api/debug/products', async (req, res) => {
+  try {
+    // Check if Product model is defined
+    if (!Product) {
+      return res.status(500).json({ error: 'Product model is not defined' });
+    }
+    
+    // Try to get a count of products
+    const count = await Product.countDocuments();
+    
+    // Return debug info
+    res.json({ 
+      status: 'success', 
+      message: 'Product model is working',
+      count: count,
+      modelName: Product.modelName,
+      collectionName: Product.collection.name
+    });
+  } catch (err) {
+    console.error('Debug products error:', err);
+    res.status(500).json({ 
+      error: 'Error in debug endpoint', 
+      message: err.message,
+      stack: err.stack
+    });
   }
 });
 

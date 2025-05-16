@@ -206,6 +206,60 @@
             color: var(--text-muted);
             margin-bottom: 20px;
         }
+
+        .add-btn {
+            background: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .add-btn:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .add-btn i {
+            font-size: 16px;
+        }
+        
+        .add-new {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-message {
+            background-color: #f0fff4;
+            color: #38a169;
+            border-left: 4px solid #38a169;
+        }
+        
+        .error-message {
+            background-color: #fff5f5;
+            color: #e53e3e;
+            border-left: 4px solid #e53e3e;
+        }
     </style>
 </head>
 <body>
@@ -236,19 +290,7 @@
                 </div>
             </header>
             
-            <% if (typeof message !== 'undefined' && message) { %>
-                <div class="message success-message">
-                    <i class="fas fa-check-circle"></i>
-                    <%= message %>
-                </div>
-            <% } %>
-            
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="message error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <%= error %>
-                </div>
-            <% } %>
+            <div id="message-container"></div>
             
             <div class="add-new">
                 <h2>Testimonials</h2>
@@ -256,41 +298,6 @@
                     <i class="fas fa-plus-circle"></i> Add New Testimonial
                 </a>
             </div>
-
-            <style>
-                .add-btn {
-                    background: var(--secondary-color);
-                    color: white;
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    text-decoration: none;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                }
-                
-                .add-btn:hover {
-                    background: var(--primary-color);
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-                }
-                
-                .add-btn i {
-                    font-size: 16px;
-                }
-                
-                .add-new {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 25px;
-                    padding-bottom: 15px;
-                    border-bottom: 1px solid #f0f0f0;
-                }
-            </style>
             
             <div class="filters">
                 <div class="filter-group">
@@ -313,84 +320,150 @@
                 </div>
             </div>
             
-            <% if (testimonials && testimonials.length > 0) { %>
-                <div class="testimonial-grid">
-                    <% testimonials.forEach(testimonial => { %>
-                        <div class="testimonial-card" data-featured="<%= testimonial.featured ? 'yes' : 'no' %>" data-rating="<%= testimonial.rating %>">
-                            <% if (testimonial.featured) { %>
-                                <span class="featured-badge">Featured</span>
-                            <% } %>
+            <div id="testimonials-container">
+                <!-- Testimonials will be loaded dynamically -->
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Load testimonials
+            loadTestimonials();
+            
+            // Check for success/error messages in URL
+            checkMessages();
+            
+            // Featured filtering
+            document.getElementById('featured-filter').addEventListener('change', function() {
+                filterTestimonials();
+            });
+            
+            // Sort filtering
+            document.getElementById('sort-filter').addEventListener('change', function() {
+                sortTestimonials();
+            });
+        });
+        
+        // Function to check if user is authenticated
+        function checkAuth() {
+            fetch('/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/admin/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/admin/login';
+                });
+        }
+        
+        // Function to load testimonials
+        function loadTestimonials() {
+            fetch('/api/admin/testimonials')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load testimonials');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderTestimonials(data.testimonials);
+                })
+                .catch(error => {
+                    console.error('Error loading testimonials:', error);
+                    showMessage('error', 'Failed to load testimonials');
+                });
+        }
+        
+        // Function to render testimonials
+        function renderTestimonials(testimonials) {
+            const container = document.getElementById('testimonials-container');
+            
+            if (testimonials && testimonials.length > 0) {
+                let html = '<div class="testimonial-grid">';
+                
+                testimonials.forEach(testimonial => {
+                    const createdDate = new Date(testimonial.createdAt).toLocaleDateString();
+                    
+                    html += `
+                        <div class="testimonial-card" data-featured="${testimonial.featured ? 'yes' : 'no'}" data-rating="${testimonial.rating}">
+                            ${testimonial.featured ? '<span class="featured-badge">Featured</span>' : ''}
                             
                             <div class="testimonial-header">
                                 <div class="client-image">
-                                    <% if (testimonial.imageUrl) { %>
-                                        <img src="<%= testimonial.imageUrl %>" alt="<%= testimonial.name %>">
-                                    <% } else { %>
-                                        <img src="/images/default-avatar.png" alt="<%= testimonial.name %>">
-                                    <% } %>
+                                    ${testimonial.imageUrl 
+                                        ? `<img src="${testimonial.imageUrl}" alt="${testimonial.name}">`
+                                        : `<img src="/images/default-avatar.png" alt="${testimonial.name}">`
+                                    }
                                 </div>
                                 <div class="client-info">
-                                    <h3><%= testimonial.name %></h3>
-                                    <p><%= testimonial.position %><% if (testimonial.company) { %>, <%= testimonial.company %><% } %></p>
+                                    <h3>${testimonial.name}</h3>
+                                    <p>${testimonial.position}${testimonial.company ? ', ' + testimonial.company : ''}</p>
                                 </div>
                             </div>
                             
                             <div class="testimonial-content">
-                                <p><%= testimonial.content %></p>
+                                <p>${testimonial.content}</p>
                             </div>
                             
                             <div class="rating">
-                                <% for (let i = 0; i < 5; i++) { %>
-                                    <% if (i < testimonial.rating) { %>
-                                        <i class="fas fa-star"></i>
-                                    <% } else { %>
-                                        <i class="far fa-star"></i>
-                                    <% } %>
-                                <% } %>
+                                ${getRatingStars(testimonial.rating)}
                             </div>
                             
                             <div class="testimonial-meta">
-                                <span>Added: <%= testimonial.createdAt.toLocaleDateString() %></span>
+                                <span>Added: ${createdDate}</span>
                             </div>
                             
                             <div class="testimonial-actions">
-                                <a href="/admin/testimonials/edit/<%= testimonial._id %>" class="action-btn edit-btn">
+                                <a href="/admin/testimonials/edit/${testimonial._id}" class="action-btn edit-btn">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
-                                <form action="/admin/testimonials/delete/<%= testimonial._id %>" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this testimonial?');">
+                                <form action="/admin/testimonials/delete/${testimonial._id}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this testimonial?');">
                                     <button type="submit" class="action-btn delete-btn">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                 </form>
                             </div>
                         </div>
-                    <% }); %>
-                </div>
-            <% } else { %>
-                <div class="empty-state">
-                    <i class="fas fa-quote-right"></i>
-                    <h3>No Testimonials Yet</h3>
-                    <p>Start by adding your first client testimonial</p>
-                    <a href="/admin/testimonials/add" class="add-btn">
-                        <i class="fas fa-plus"></i> Add New Testimonial
-                    </a>
-                </div>
-            <% } %>
-        </main>
-    </div>
-
-    <script src="/js/admin.js"></script>
-    <script>
-        // Featured filtering
-        document.getElementById('featured-filter').addEventListener('change', function() {
-            filterTestimonials();
-        });
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-quote-right"></i>
+                        <h3>No Testimonials Yet</h3>
+                        <p>Start by adding your first client testimonial</p>
+                        <a href="/admin/testimonials/add" class="add-btn">
+                            <i class="fas fa-plus"></i> Add New Testimonial
+                        </a>
+                    </div>
+                `;
+            }
+        }
         
-        // Sort filtering
-        document.getElementById('sort-filter').addEventListener('change', function() {
-            sortTestimonials();
-        });
+        // Function to get rating stars HTML
+        function getRatingStars(rating) {
+            let starsHtml = '';
+            for (let i = 0; i < 5; i++) {
+                if (i < rating) {
+                    starsHtml += '<i class="fas fa-star"></i>';
+                } else {
+                    starsHtml += '<i class="far fa-star"></i>';
+                }
+            }
+            return starsHtml;
+        }
         
+        // Function to filter testimonials
         function filterTestimonials() {
             const featured = document.getElementById('featured-filter').value;
             const items = document.querySelectorAll('.testimonial-card');
@@ -406,9 +479,13 @@
             });
         }
         
+        // Function to sort testimonials
         function sortTestimonials() {
             const sortOrder = document.getElementById('sort-filter').value;
             const grid = document.querySelector('.testimonial-grid');
+            
+            if (!grid) return;
+            
             const items = Array.from(grid.querySelectorAll('.testimonial-card'));
             
             items.sort((a, b) => {
@@ -432,6 +509,34 @@
             
             // Add sorted items
             items.forEach(item => grid.appendChild(item));
+        }
+        
+        // Function to check for success/error messages in URL
+        function checkMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+            
+            if (message) {
+                showMessage('success', decodeURIComponent(message));
+            }
+            
+            if (error) {
+                showMessage('error', decodeURIComponent(error));
+            }
+        }
+        
+        // Function to show success/error messages
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageHTML = `
+                <div class="message ${type}-message">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                    ${message}
+                </div>
+            `;
+            
+            messageContainer.innerHTML = messageHTML;
         }
     </script>
 </body>
