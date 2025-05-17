@@ -20,6 +20,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const session = require('express-session');
 const { connectToDatabase, isConnected } = require('./utils/database');
+const port = process.env.PORT || 3000;
 
 // Set strictQuery to suppress deprecation warning
 mongoose.set('strictQuery', true);
@@ -138,15 +139,8 @@ function setupRoutes() {
   app.use(session({
     secret: process.env.SESSION_SECRET || 'default_secret',
     resave: false,
-    saveUninitialized: false, // Changed to false
-    cookie: { 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      httpOnly: true
-    },
-    // Add this for production environments
-    proxy: process.env.NODE_ENV === 'production'
+    saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
   }));
 
   // Set up view engine for any routes that still use render
@@ -693,16 +687,18 @@ connectToDatabase()
     setupRoutes();
   });
 
-// Determine if we're running in a serverless environment
-const isServerless = process.env.VERCEL || process.env.RENDER;
+// Start server
+//const PORT = process.env.PORT || 3000;
+//const server = app.listen(PORT, () => {
+  //appLogger.log(`Server running on port ${PORT}`);
+//});
 
-// Start the server if not in a serverless environment
-if (!isServerless) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    appLogger.log(`Server running on port ${PORT}`);
-  });
-}
+// Update the server startup code at the end of your file
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+  // Connect to MongoDB after server starts
+  connectToDatabase();
+});
 
-// Export the Express app for all environments
+// Export the Express app for serverless environments
 module.exports = app;
