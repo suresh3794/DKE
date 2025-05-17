@@ -73,17 +73,19 @@
                         return;
                     }
                     
-                    if (!response.ok) {
-                        return response.json().then(data => {
-                            throw new Error(data.error || 'Login failed');
-                        });
-                    }
-                    
                     return response.json();
                 })
                 .then(data => {
-                    // Redirect to dashboard on success
-                    window.location.href = '/admin';
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Use the redirectUrl from the response if available
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                    } else {
+                        window.location.href = '/admin';
+                    }
                 })
                 .catch(error => {
                     showError(error.message || 'Invalid username or password');

@@ -123,7 +123,7 @@ router.post('/login', async (req, res) => {
       
       // Check if request expects JSON
       if (req.headers['content-type'] === 'application/json') {
-        return res.json({ success: true });
+        return res.json({ success: true, redirectUrl: '/admin' });
       }
       res.redirect('/admin');
     });
