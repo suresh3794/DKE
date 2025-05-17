@@ -693,11 +693,16 @@ connectToDatabase()
     setupRoutes();
   });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  appLogger.log(`Server running on port ${PORT}`);
-});
+// Determine if we're running in a serverless environment
+const isServerless = process.env.VERCEL || process.env.RENDER;
 
-// Export the Express app for serverless environments
+// Start the server if not in a serverless environment
+if (!isServerless) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    appLogger.log(`Server running on port ${PORT}`);
+  });
+}
+
+// Export the Express app for all environments
 module.exports = app;
