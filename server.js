@@ -27,6 +27,10 @@ const router = express.Router();
 const port = process.env.PORT || 3000;
 const MongoStore = require('connect-mongo');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cookieParser = require('cookie-parser');
+
+// Add cookie-parser middleware before session middleware
+app.use(cookieParser());
 
 // Add this near the top of your file with other imports
 const { 
@@ -891,15 +895,44 @@ app.get('/admin/api/dashboard', (req, res) => {
   }
 });
 
-// Check if user is authenticated (for AJAX requests)
+// Improved check-auth endpoint that checks both session and JWT
 app.get('/admin/check-auth', (req, res) => {
-  console.log('Check auth session:', req.session);
-  console.log('Is admin?', req.session && req.session.isAdmin);
-  
+  // Check session first
   if (req.session && req.session.isAdmin) {
-    res.status(200).json({ authenticated: true });
-  } else {
-    res.status(401).json({ authenticated: false });
+    console.log('Authenticated via session');
+    return res.status(200).json({ authenticated: true });
+  }
+  
+  // If session check fails, check JWT token in cookie
+  const token = req.cookies.adminToken;
+  
+  if (!token) {
+    console.log('No token found in cookies');
+    return res.status(401).json({ authenticated: false });
+  }
+  
+  try {
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+    
+    if (decoded && decoded.isAdmin) {
+      console.log('Authenticated via JWT token');
+      
+      // Refresh session if it exists
+      if (req.session) {
+        req.session.isAdmin = true;
+        req.session.userId = decoded.id;
+        req.session.username = decoded.username;
+      }
+      
+      return res.status(200).json({ authenticated: true });
+    } else {
+      console.log('Token verification failed: Not an admin');
+      return res.status(401).json({ authenticated: false });
+    }
+  } catch (err) {
+    console.log('Token verification failed:', err.message);
+    return res.status(401).json({ authenticated: false });
   }
 });
 
@@ -911,13 +944,13 @@ app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/admin/login.html'));
 });
 
-// Login process
+// Login process - updated to use both session and JWT
 app.post('/admin/login', express.json(), async (req, res) => {
   try {
     const { username, password } = req.body;
     console.log('Login attempt:', username);
     
-    // Find user in database instead of accepting any credentials
+    // Find user in database
     const User = mongoose.model('User');
     const user = await User.findOne({ 
       username: username,
@@ -932,7 +965,7 @@ app.post('/admin/login', express.json(), async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
-    // Check password - use bcrypt.compare for hashed passwords
+    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
@@ -940,10 +973,29 @@ app.post('/admin/login', express.json(), async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
-    // Set session
+    // Set session (for non-serverless environments)
     req.session.isAdmin = true;
     req.session.userId = user._id;
     req.session.username = user.username;
+    
+    // Create JWT token (more reliable for serverless)
+    const token = jwt.sign(
+      { 
+        id: user._id, 
+        username: user.username,
+        role: user.role,
+        isAdmin: true
+      },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: "7d" }
+    );
+    
+    // Set token as HTTP-only cookie
+    res.cookie('adminToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
     
     console.log('Admin login successful for:', username);
     return res.json({ success: true, redirectUrl: '/admin/dashboard' });
