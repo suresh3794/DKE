@@ -58,8 +58,6 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
       mongoOptions: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
         retryWrites: true,
         w: 'majority'
       },
@@ -69,6 +67,7 @@ app.use(
     }),
     cookie: {
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      sameSite: 'lax', // Helps with CSRF protection
       maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
     }
   })
@@ -895,6 +894,8 @@ app.get('/admin/api/dashboard', (req, res) => {
 // Check if user is authenticated (for AJAX requests)
 app.get('/admin/check-auth', (req, res) => {
   console.log('Check auth session:', req.session);
+  console.log('Is admin?', req.session && req.session.isAdmin);
+  
   if (req.session && req.session.isAdmin) {
     res.status(200).json({ authenticated: true });
   } else {

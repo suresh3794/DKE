@@ -68,6 +68,8 @@
                     credentials: 'same-origin'
                 })
                 .then(response => {
+                    console.log('Login response status:', response.status);
+                    
                     if (response.redirected) {
                         window.location.href = response.url;
                         return;
@@ -76,6 +78,8 @@
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Login response data:', data);
+                    
                     if (data.error) {
                         throw new Error(data.error);
                     }
@@ -83,11 +87,15 @@
                     // Use the redirectUrl from the response if available
                     if (data.redirectUrl) {
                         window.location.href = data.redirectUrl;
+                    } else if (data.success) {
+                        // If success is true but no redirectUrl, go to dashboard
+                        window.location.href = '/admin/dashboard';
                     } else {
                         window.location.href = '/admin';
                     }
                 })
                 .catch(error => {
+                    console.error('Login error:', error);
                     showError(error.message || 'Invalid username or password');
                 });
             });
