@@ -338,6 +338,33 @@
                 content: script.src ? '(external)' : script.innerHTML.substring(0, 100) + '...'
             });
         });
+
+        // Function to validate the contact form
+        function validateContactForm() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
+            
+            logger.log('Validating contact form:', { name, email, subject });
+            
+            if (!name || !email || !subject || !message) {
+                logger.warn('Form validation failed - missing required fields');
+                showMessage('error', 'Please fill in all required fields');
+                return false;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                logger.warn('Form validation failed - invalid email format');
+                showMessage('error', 'Please enter a valid email address');
+                return false;
+            }
+            
+            logger.log('Form validation passed, submitting form');
+            return true;
+        }
     </script>
 </body>
 </html>

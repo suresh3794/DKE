@@ -391,10 +391,21 @@
                 });
         }
         
-        // Function to load dashboard data
+        // Function to load dashboard data - with fallback
         function loadDashboardData() {
-            // Use the direct endpoint
+            console.log('Loading dashboard data...');
+            
+            // Try the first endpoint
             fetch('/dashboard-stats')
+                .then(response => {
+                    console.log('First endpoint response status:', response.status);
+                    if (!response.ok) {
+                        // If first endpoint fails, try the second one
+                        console.log('First endpoint failed, trying second endpoint');
+                        return fetch('/admin/api/dashboard');
+                    }
+                    return response;
+                })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to load dashboard data');
@@ -412,11 +423,22 @@
                 })
                 .catch(error => {
                     console.error('Error loading dashboard data:', error);
-                    document.getElementById('error-container').innerHTML = `
-                        <div class="error-message">
-                            Error loading dashboard data. Please try refreshing the page.
-                        </div>
-                    `;
+                    
+                    // Show error message
+                    const messageContainer = document.getElementById('message-container');
+                    if (messageContainer) {
+                        messageContainer.innerHTML = `
+                            <div class="error-message">
+                                Error loading dashboard data. Please try refreshing the page.
+                            </div>
+                        `;
+                    }
+                    
+                    // Set default values
+                    document.getElementById('productCount').textContent = '0';
+                    document.getElementById('galleryCount').textContent = '0';
+                    document.getElementById('testimonialCount').textContent = '0';
+                    document.getElementById('newMessageCount').textContent = '0';
                 });
         }
         

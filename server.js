@@ -784,29 +784,65 @@ app.get('/api/admin/settings', async (req, res) => {
     }
   });
 
-  app.get('/dashboard-stats', (req, res) => {
+  app.get('/contact/success', (req, res) => {
+    console.log('Contact success page requested');
+    res.sendFile(path.join(__dirname, 'public/contact-success.html'));
+  });
+
+  app.get('/dashboard-stats', async (req, res) => {
     try {
       console.log('Dashboard stats endpoint called');
       // Set content type explicitly to application/json
       res.setHeader('Content-Type', 'application/json');
       
-      // For testing purposes, return hardcoded data
-      // This will work even if the database connection fails
-      return res.status(200).send(JSON.stringify({
-        productCount: 5,
-        galleryCount: 10,
-        testimonialCount: 3,
-        newMessageCount: 2
-      }));
+      // Check if database is connected
+      if (!isConnected() || mongoose.connection.readyState !== 1) {
+        console.log('Database not connected, returning default stats');
+        return res.status(200).json({
+          productCount: 0,
+          galleryCount: 0,
+          testimonialCount: 0,
+          newMessageCount: 0
+        });
+      }
+      
+      // Get models
+      const Product = mongoose.model('Product');
+      const Gallery = mongoose.model('Gallery');
+      const Testimonial = mongoose.model('Testimonial');
+      const Contact = mongoose.model('Contact');
+      
+      // Get counts from database
+      const [productCount, galleryCount, testimonialCount, newMessageCount] = await Promise.all([
+        Product.countDocuments(),
+        Gallery.countDocuments(),
+        Testimonial.countDocuments(),
+        Contact.countDocuments({ status: 'new' })
+      ]);
+      
+      console.log('Dashboard stats:', {
+        productCount,
+        galleryCount,
+        testimonialCount,
+        newMessageCount
+      });
+      
+      // Return actual counts
+      return res.status(200).json({
+        productCount,
+        galleryCount,
+        testimonialCount,
+        newMessageCount
+      });
     } catch (err) {
       console.error('Error in dashboard stats endpoint:', err);
-      return res.status(500).send(JSON.stringify({ 
+      return res.status(500).json({ 
         error: 'Error loading dashboard data',
         productCount: 0,
         galleryCount: 0,
         testimonialCount: 0,
         newMessageCount: 0
-      }));
+      });
     }
   });
 
@@ -2270,6 +2306,7 @@ app.get('/admin/settings/slide/:index', (req, res) => {
   
   res.sendFile(path.join(__dirname, 'public/admin/slide-form.html'));
 });
+
 
 // Update the server startup code at the end of your file
 app.listen(port, () => {
