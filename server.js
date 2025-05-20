@@ -276,9 +276,10 @@ app.get('/api/asset-url/:assetName', (req, res) => {
 const User = require('./models/User');
 const Gallery = require('./models/Gallery');
 const Product = require('./models/Product');
-const Project = require('./models/setting');
+const Setting = require('./models/Setting');
 const Testimonial = require('./models/Testimonial');
 const Contact = require('./models/Contact');
+
 
 
 // Authentication middleware
