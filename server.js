@@ -28,6 +28,7 @@ const port = process.env.PORT || 3000;
 const MongoStore = require('connect-mongo');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
 // Add cookie-parser middleware before session middleware
 app.use(cookieParser());
