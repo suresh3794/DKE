@@ -461,5 +461,24 @@
             });
         }
     </script>
+    <script>
+        // Update logout link to ensure it uses GET method
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find logout link and ensure it uses the correct URL
+            const logoutLink = document.querySelector('a[href="/admin/logout"]');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Clear any client-side storage if you're using any
+                    localStorage.removeItem('adminAuth');
+                    sessionStorage.removeItem('adminAuth');
+                    
+                    // Redirect to logout endpoint
+                    window.location.href = '/admin/logout';
+                });
+            }
+        });
+    </script>
 </body>
 </html>

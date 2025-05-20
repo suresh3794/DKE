@@ -821,17 +821,43 @@ app.use((req, res, next) => {
   next();
 });
 
-// Admin dashboard
+// Admin home route - update to check both session and JWT token
 app.get('/admin', (req, res) => {
   console.log('Admin route accessed, session:', req.session);
   
+  // Check session first
   if (req.session && req.session.isAdmin) {
-    console.log('User is authenticated, redirecting to dashboard');
+    console.log('User is authenticated via session, redirecting to dashboard');
     return res.redirect('/admin/dashboard');
-  } else {
-    console.log('User is not authenticated, redirecting to login');
-    return res.redirect('/admin/login');
   }
+  
+  // If session check fails, check JWT token in cookie
+  const token = req.cookies.adminToken;
+  
+  if (token) {
+    try {
+      // Verify the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+      
+      if (decoded && decoded.isAdmin) {
+        console.log('User is authenticated via JWT token, redirecting to dashboard');
+        
+        // Refresh session if it exists
+        if (req.session) {
+          req.session.isAdmin = true;
+          req.session.userId = decoded.id;
+          req.session.username = decoded.username;
+        }
+        
+        return res.redirect('/admin/dashboard');
+      }
+    } catch (err) {
+      console.log('Token verification failed:', err.message);
+    }
+  }
+  
+  console.log('User is not authenticated, redirecting to login');
+  return res.redirect('/admin/login');
 });
 
 // API endpoint for dashboard data
@@ -1006,9 +1032,19 @@ app.post('/admin/login', express.json(), async (req, res) => {
   }
 });
 
-// Logout
+// Logout - update to clear both session and JWT cookie
 app.get('/admin/logout', (req, res) => {
+  // Clear session
   req.session.destroy();
+  
+  // Clear JWT cookie
+  res.clearCookie('adminToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/'
+  });
+  
+  console.log('User logged out, session and token cleared');
   res.redirect('/admin/login');
 });
 
@@ -1311,12 +1347,37 @@ app.get('/admin/settings', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/admin/settings.html'));
 });
 
-// Dashboard page
+// Dashboard page - update to check both session and JWT token
 app.get('/admin/dashboard', (req, res) => {
-  if (!req.session || !req.session.isAdmin) {
-    return res.redirect('/admin/login');
+  // Check session first
+  if (req.session && req.session.isAdmin) {
+    return res.sendFile(path.join(__dirname, 'public/admin/dashboard.html'));
   }
-  res.sendFile(path.join(__dirname, 'public/admin/dashboard.html'));
+  
+  // If session check fails, check JWT token in cookie
+  const token = req.cookies.adminToken;
+  
+  if (token) {
+    try {
+      // Verify the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+      
+      if (decoded && decoded.isAdmin) {
+        // Refresh session if it exists
+        if (req.session) {
+          req.session.isAdmin = true;
+          req.session.userId = decoded.id;
+          req.session.username = decoded.username;
+        }
+        
+        return res.sendFile(path.join(__dirname, 'public/admin/dashboard.html'));
+      }
+    } catch (err) {
+      console.log('Token verification failed:', err.message);
+    }
+  }
+  
+  return res.redirect('/admin/login');
 });
 
 // Remove the line that uses the admin router
