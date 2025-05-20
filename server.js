@@ -1293,17 +1293,6 @@ process.on('SIGINT', async () => {
   }
 });
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
-const avatarDir = path.join(uploadDir, 'avatars');
-
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
-if (!fs.existsSync(avatarDir)) {
-    fs.mkdirSync(avatarDir);
-}
-
 // Upload avatar
 app.post("/api/user/avatar", isAuthenticated, (req, res) => {
   // Use a try-catch block around the multer middleware
