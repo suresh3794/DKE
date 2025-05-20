@@ -565,11 +565,11 @@ app.get('/api/admin/settings', async (req, res) => {
         error: 'Failed to fetch settings', 
         message: err.message,
         settings: {
-          siteName: 'Dignity Kitchen',
-          siteTagline: 'Kitchen Equipment Supplier',
-          contactEmail: 'info@example.com',
-          contactPhone: '+1234567890',
-          contactAddress: 'Default Address',
+          siteName: 'Dignity Kitchen Equipments',
+            siteTagline: 'Premium quality equipment for restaurants, hotels, and catering services',
+            contactEmail: 'Dignitykitchenequipments.sale@gmail.com',
+            contactPhone: '+91 98402 92129',
+            contactAddress: 'No.118, GNT Road, Erukkanchery, Moolakadai, Chennai -118',
           heroSlides: Array(6).fill('')
         }
       });
@@ -584,11 +584,11 @@ app.get('/api/admin/settings', async (req, res) => {
       if (!isConnected() || mongoose.connection.readyState !== 1) {
         console.log('Database not connected, returning default settings');
         return res.json({
-          siteName: 'Dignity Kitchen',
-          siteTagline: 'Kitchen Equipment Supplier',
-          contactEmail: 'info@example.com',
-          contactPhone: '+1234567890',
-          contactAddress: 'Default Address',
+          siteName: 'Dignity Kitchen Equipments',
+            siteTagline: 'Premium quality equipment for restaurants, hotels, and catering services',
+            contactEmail: 'Dignitykitchenequipments.sale@gmail.com',
+            contactPhone: '+91 98402 92129',
+            contactAddress: 'No.118, GNT Road, Erukkanchery, Moolakadai, Chennai -118',
           footerText: 'Copyright © 2023 Dignity Kitchen. All rights reserved.',
           socialFacebook: 'https://facebook.com/',
           socialInstagram: 'https://instagram.com/',
